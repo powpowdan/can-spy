@@ -1,6 +1,27 @@
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
+ 
 import 'leaflet/dist/leaflet.css';
+
+// 1. Import the actual image files from the leaflet package
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+// 2. Create a fresh Default Icon object
+let DefaultIcon = L.icon({
+    iconUrl: icon,
+    iconRetinaUrl: iconRetina,
+    shadowUrl: iconShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    tooltipAnchor: [16, -28],
+    shadowSize: [41, 41]
+});
+
+// 3. Set this as the global default for all markers
+L.Marker.prototype.options.icon = DefaultIcon;
 
 export default function App() {
   const mapContainer = useRef(null);
