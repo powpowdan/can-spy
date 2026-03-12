@@ -22,6 +22,15 @@ let DefaultIcon = L.icon({
 // 3. Set this as the global default for all markers
 L.Marker.prototype.options.icon = DefaultIcon;
 
+const redIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
 export default function App() {
   const mapContainer = useRef(null);
   const mapInstance = useRef(null);
@@ -74,7 +83,7 @@ const fetchOttawaCameras = async (layerGroup) => {
     cameraList
       .filter(camera => camera.type === 'camera' || camera.camera_number < 2000)
       .forEach(camera => {
-        const marker = L.marker([camera.latitude, camera.longitude]);
+        const marker = L.marker([camera.latitude, camera.longitude], { icon: redIcon });
         
         // SWITCH FROM IFRAME TO IMG TAG
         const popupContent = `
