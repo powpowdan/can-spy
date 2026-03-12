@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
- 
 import 'leaflet/dist/leaflet.css';
 
 // 1. Import the actual image files from the leaflet package
@@ -26,54 +25,72 @@ L.Marker.prototype.options.icon = DefaultIcon;
 export default function App() {
   const mapContainer = useRef(null);
   const mapInstance = useRef(null);
+  const layerControlRef = useRef(null);
 
   useEffect(() => {
-    if (mapInstance.current) {
-      // Cleanup previous markers if any, though with the current structure it's not strictly necessary
-    } else {
+    if (!mapInstance.current) {
       // Initialize map
-      mapInstance.current = L.map(mapContainer.current).setView([45.4215, -75.6972], 12);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      mapInstance.current = L.map(mapContainer.current).setView([45.4215, -75.6972], 10);
+      const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
       }).addTo(mapInstance.current);
+
+      // Initialize layer groups
+      const cityCameras = L.layerGroup().addTo(mapInstance.current);
+      const mtoCameras = L.layerGroup().addTo(mapInstance.current);
+      
+      const overlayMaps = {
+        "City of Ottawa": cityCameras,
+        "MTO": mtoCameras
+      };
+
+      layerControlRef.current = L.control.layers(null, overlayMaps).addTo(mapInstance.current);
+
+      fetchOttawaCameras(cityCameras);
+      fetchMtoCameras(mtoCameras);
     }
 
-  const fetchCameras = async () => {
+    return () => {
+        if (mapInstance.current) {
+            mapInstance.current.remove();
+            mapInstance.current = null;
+        }
+    };
+  }, []);
+
+const fetchOttawaCameras = async (layerGroup) => {
   try {
     const proxyUrl = "https://corsproxy.io/?";
-    const targetUrl = "http://traffic.ottawa.ca/map/service/camera";
+    // Using HTTPS here also avoids that 301 redirect error we saw earlier
+    const targetUrl = "https://traffic.ottawa.ca/map/service/camera";
     
     const response = await fetch(proxyUrl + encodeURIComponent(targetUrl));
     const data = await response.json();
 
-    // The "Safe Check": Some APIs return an array, others wrap it in an object
     const cameraList = Array.isArray(data) ? data : (data.cameras || []);
 
-    if (cameraList.length === 0) {
-      console.warn("No camera data found in response:", data);
-      return;
-    }
+    if (cameraList.length === 0) return;
 
     cameraList
       .filter(camera => camera.type === 'camera' || camera.camera_number < 2000)
       .forEach(camera => {
-        const marker = L.marker([camera.latitude, camera.longitude]).addTo(mapInstance.current);
+        const marker = L.marker([camera.latitude, camera.longitude]);
         
+        // SWITCH FROM IFRAME TO IMG TAG
         const popupContent = `
-          <div style="width: 300px; min-height: 200px;">
-            <b style="font-size: 14px;">${camera.description}</b><br/>
+          <div style="width: 300px;">
+            <b style="font-size: 14px;">${camera.description || camera.name}</b><br/>
             <img 
               src="https://traffic.ottawa.ca/map/camera?id=${camera.camera_number}" 
-              alt="Live Traffic Feed"
+              alt="Live Feed"
               style="width: 100%; border-radius: 4px; margin-top: 10px; display: block;"
-              onerror="this.onerror=null; this.src='https://placehold.co/300x200?text=Camera+Offline';"
+              onerror="this.onerror=null; this.src='https://placehold.co/300x200?text=City+Camera+Offline';"
             />
-            <p style="font-size: 11px; color: #666; margin-top: 5px;">
-              Camera ID: ${camera.camera_number}
-            </p>
           </div>
         `;
+        
         marker.bindPopup(popupContent);
+        layerGroup.addLayer(marker);
       });
 
   } catch (error) {
@@ -81,17 +98,36 @@ export default function App() {
   }
 };
 
-    if (mapInstance.current) {
-      fetchCameras();
+  const fetchMtoCameras = async (layerGroup) => {
+    try {
+      const proxy = "https://corsproxy.io/?";
+      const url = encodeURIComponent('https://511on.ca/api/v2/get/cameras');
+      
+      const response = await fetch(proxy + url);
+      const cameras = await response.json();
+      
+      cameras.forEach(camera => {
+        if (camera.Latitude && camera.Longitude && camera.Views?.length > 0) {
+          const marker = L.marker([camera.Latitude, camera.Longitude]);
+          const popupContent = `
+            <div style="width: 300px;">
+              <b style="font-size: 14px;">${camera.Location}</b><br/>
+              <img 
+                src="${camera.Views[0].Url}" 
+                style="width: 100%; border-radius: 4px; margin-top: 10px;"
+                onerror="this.src='https://placehold.co/300x200?text=Highway+Cam+Offline';"
+              />
+              <p style="font-size: 11px; color: #666;">Roadway: ${camera.Roadway}</p>
+            </div>
+          `;
+          marker.bindPopup(popupContent);
+          layerGroup.addLayer(marker);
+        }
+      });
+    } catch (error) {
+      console.error("Failed to fetch MTO data:", error);
     }
-
-    return () => {
-      if (mapInstance.current) {
-        // Optional: clean up markers if the component unmounts
-        // This logic would need to be more sophisticated if we re-fetch
-      }
-    };
-  }, []);
+  };
 
   return (
     <div 
