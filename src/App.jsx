@@ -39,14 +39,17 @@ export default function App() {
         const marker = L.marker([camera.latitude, camera.longitude]).addTo(mapInstance.current);
         
         const popupContent = `
-          <div style="width: 300px;">
-            <b style="font-size: 14px;">${camera.description || camera.name}</b><br/>
-            <iframe 
-              src="https://traffic.ottawa.ca/map/cameraWindow?id=${camera.camera_number}" 
-              width="100%" 
-              height="230px" 
-              style="border:none; margin-top: 10px;"
-            ></iframe>
+          <div style="width: 300px; min-height: 200px;">
+            <b style="font-size: 14px;">${camera.description}</b><br/>
+            <img 
+              src="https://traffic.ottawa.ca/map/camera?id=${camera.camera_number}" 
+              alt="Live Traffic Feed"
+              style="width: 100%; border-radius: 4px; margin-top: 10px; display: block;"
+              onerror="this.onerror=null; this.src='https://placehold.co/300x200?text=Camera+Offline';"
+            />
+            <p style="font-size: 11px; color: #666; margin-top: 5px;">
+              Camera ID: ${camera.camera_number}
+            </p>
           </div>
         `;
         marker.bindPopup(popupContent);
