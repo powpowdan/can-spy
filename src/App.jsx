@@ -2,26 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// 1. Import the actual image files from the leaflet package
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-
-// 2. Create a fresh Default Icon object
-let DefaultIcon = L.icon({
-    iconUrl: icon,
-    iconRetinaUrl: iconRetina,
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    tooltipAnchor: [16, -28],
-    shadowSize: [41, 41]
-});
-
-// 3. Set this as the global default for all markers
-L.Marker.prototype.options.icon = DefaultIcon;
-
+// Red for Ottawa City
 const redIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -30,6 +11,19 @@ const redIcon = new L.Icon({
   popupAnchor: [1, -34],
   shadowSize: [41, 41]
 });
+
+// Blue for MTO/Highway
+const blueIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+ 
+
+ 
 
 export default function App() {
   const mapContainer = useRef(null);
@@ -117,7 +111,7 @@ const fetchOttawaCameras = async (layerGroup) => {
       
       cameras.forEach(camera => {
         if (camera.Latitude && camera.Longitude && camera.Views?.length > 0) {
-          const marker = L.marker([camera.Latitude, camera.Longitude]);
+          const marker = L.marker([camera.Latitude, camera.Longitude], { icon: blueIcon });
           const popupContent = `
             <div style="width: 300px;">
               <b style="font-size: 14px;">${camera.Location}</b><br/>
