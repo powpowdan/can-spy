@@ -2,6 +2,10 @@ import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+import 'leaflet.markercluster';
+
 // Red for Ottawa City
 const redIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
@@ -221,11 +225,14 @@ export default function App() {
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
       }).addTo(mapInstance.current);
-
+const clusterOptions = {
+        maxClusterRadius: 65, // Default is 80. Lower number = less aggressive clustering
+        disableClusteringAtZoom: 14 // Completely un-cluster everything 
+      };
       // Initialize layer groups
-      const cityCameras = L.layerGroup().addTo(mapInstance.current);
-      const mtoCameras = L.layerGroup().addTo(mapInstance.current);
-      const quebecCameras = L.layerGroup().addTo(mapInstance.current);
+const cityCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.current);
+      const mtoCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.current);
+      const quebecCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.current);
       
      const overlayMaps = {
         "City of Ottawa": cityCameras,
