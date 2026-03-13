@@ -138,7 +138,12 @@ const fetchQuebecCameras = async (layerGroup) => {
       return;
     }
     
-    if (!data || !data.features) return;
+    if (!data || !Array.isArray(data.features)) {
+      console.error("Quebec data fetch failed or proxy timed out.");
+      const qcLabel = document.getElementById('qc-layer-label');
+      if (qcLabel) qcLabel.innerHTML = "<span style='color: #dc2626;'> (Proxy timeout - Please refresh)</span>";
+      return; 
+    }
 
     console.log("✅ Successfully decoded Quebec data!");
     console.log(`📸 Found ${data.features.length} cameras from Quebec API.`);
@@ -189,8 +194,16 @@ const fetchQuebecCameras = async (layerGroup) => {
         layerGroup.addLayer(marker);
       }
     });
+    const qcLabel = document.getElementById('qc-layer-label');
+    if (qcLabel) {
+      qcLabel.innerHTML = "Loaded <span style='font-size: 11px; color: #16a34a; margin-left: 5px;'>✓</span>";
+    }
   } catch (error) {
     console.error("Network or fetch error with Quebec 511:", error);
+    const qcLabel = document.getElementById('qc-layer-label');
+    if (qcLabel) {
+      qcLabel.innerHTML = "Québec 511 <span style='font-size: 11px; color: #dc2626; margin-left: 5px;'>(Failed to load)</span>";
+    }
   }
 };
 
@@ -214,10 +227,10 @@ export default function App() {
       const mtoCameras = L.layerGroup().addTo(mapInstance.current);
       const quebecCameras = L.layerGroup().addTo(mapInstance.current);
       
-      const overlayMaps = {
+     const overlayMaps = {
         "City of Ottawa": cityCameras,
-        "MTO": mtoCameras,
-        "Québec 511": quebecCameras
+        "MTO": mtoCameras, 
+        "Québec 511 <span id='qc-layer-label' style='font-size: 11px; color: #d97706; font-style: italic; margin-left: 5px;'>(Loading 600+ live cams...) ⏳</span>": quebecCameras
       };
 
       layerControlRef.current = L.control.layers(null, overlayMaps).addTo(mapInstance.current);
