@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -438,12 +438,15 @@ const fetchQuebecCameras = async (layerGroup) => {
   }
 };
 
+
+
 export default function App() {
   const mapContainer = useRef(null);
   const mapInstance = useRef(null);
   const layerControlRef = useRef(null);
   const refreshIntervalIdRef = useRef(null);
   const activePopupRef = useRef(null);
+  const [isLegendOpen, setIsLegendOpen] = useState(true);
 
   useEffect(() => {
     if (!mapInstance.current) {
@@ -537,9 +540,65 @@ const cityCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.curre
   }, []);
 
   return (
-    <div 
-      ref={mapContainer} 
-      style={{ height: '100vh', width: '100vw' }} 
+ 
+  <div style={{ position: 'relative' }}>
+    {/* This is your existing map container */}
+    <div
+      ref={mapContainer}
+      style={{ height: '100vh', width: '100vw' }}
     />
+
+    {/* PASTE THE LEGEND CODE HERE (Right where your red line was) */}
+    <div style={{
+      position: 'absolute',
+      bottom: '30px',
+      right: '20px',
+      zIndex: 1000
+    }}>
+      <div className="map-legend">
+        <div 
+          className="legend-header"
+          onClick={() => setIsLegendOpen(!isLegendOpen)}
+          style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+        >
+          <span>SYSTEM: ONLINE</span>
+          <span>{isLegendOpen ? '▼' : '▲'}</span>
+        </div>
+        
+        {isLegendOpen && (
+          <>
+            <div className="legend-item">
+              <span className="dot" style={{ backgroundColor: '#e81123' }}></span>
+              <span>Ottawa Municipal</span>
+            </div>
+            
+            <div className="legend-item">
+              <span className="dot" style={{ backgroundColor: '#a020f0' }}></span>
+              <span>Toronto Municipal</span>
+            </div>
+            
+            <div className="legend-item">
+              <span className="dot" style={{ backgroundColor: '#0078d7' }}></span>
+              <span>Ontario 511 (MTO)</span>
+            </div>
+            
+            <div className="legend-item">
+              <span className="dot" style={{ backgroundColor: '#00cc00' }}></span>
+              <span>Québec (live Video)</span>
+            </div>
+
+             <div className="legend-item">
+              <span className="dot" style={{ backgroundColor: '#ff1493' }}></span>
+              <span>Wildlife & Nature</span>
+            </div>
+
+            <div style={{ marginTop: '10px', fontSize: '10px', color: '#888', textAlign: 'center' }}>
+              Auto-Refresh: 15s
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  </div>
   );
 }
