@@ -108,14 +108,12 @@ const fetchTorontoCameras = (layerGroup) => {
 const fetchOttawaCameras = async (layerGroup) => {
   try {
     const proxyUrl = "https://corsproxy.io/?";
-    // Using HTTPS here also avoids that 301 redirect error we saw earlier
     const targetUrl = "https://traffic.ottawa.ca/map/service/camera";
     
     const response = await fetch(proxyUrl + encodeURIComponent(targetUrl));
     const data = await response.json();
 
     const cameraList = Array.isArray(data) ? data : (data.cameras || []);
-
     if (cameraList.length === 0) return;
 
     cameraList
@@ -123,30 +121,56 @@ const fetchOttawaCameras = async (layerGroup) => {
       .forEach(camera => {
         const marker = L.marker([camera.latitude, camera.longitude], { icon: redIcon });
         
-        // SWITCH FROM IFRAME TO IMG TAG
-        const popupContent = `
-          <div style="width: 300px;">
-            <b style="font-size: 14px;">${camera.description || camera.name}</b><br/>
-            <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
-              <span class="pulsing-dot"></span>
-              <span style="color: red; font-weight: bold;">LIVE</span>
-              <span style="font-size: 11px; color: #666; margin-left: auto;">Updated: <span class="updated-timestamp">${new Date().toLocaleTimeString()}</span></span>
+        // Create a unique ID for this specific Ottawa camera
+        const camId = camera.camera_number;
+        const popupId = `ottawa-${camId}`;
+        const baseImageUrl = `https://traffic.ottawa.ca/map/camera?id=${camId}`;
+
+        // DYNAMIC POPUP LOGIC
+        marker.bindPopup((layer) => {
+          // Start the 15s refresh timer while the popup is open
+          setTimeout(() => {
+            const interval = setInterval(() => {
+              const img = document.getElementById(`img-${popupId}`);
+              const timeSpan = document.getElementById(`time-${popupId}`);
+              
+              if (img) {
+                // Force refresh with a timestamp
+                img.src = `${baseImageUrl}&t=${new Date().getTime()}`;
+                if (timeSpan) timeSpan.innerText = new Date().toLocaleTimeString();
+              } else {
+                // Stop the timer when the popup is closed
+                clearInterval(interval);
+              }
+            }, 15000);
+          }, 100);
+
+          return `
+            <div style="width: 300px;">
+              <b style="font-size: 14px;">${camera.description || camera.name}</b><br/>
+              <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
+                <span class="pulsing-dot"></span>
+                <span style="color: red; font-weight: bold;">LIVE</span>
+                <span style="font-size: 11px; color: #666; margin-left: auto;">
+                  Updated: <b id="time-${popupId}">${new Date().toLocaleTimeString()}</b>
+                </span>
+              </div>
+              <img 
+                id="img-${popupId}"
+                src="${baseImageUrl}&t=${new Date().getTime()}" 
+                alt="Live Feed"
+                style="width: 100%; border-radius: 4px; margin-top: 10px; display: block;"
+                onerror="this.onerror=null; this.src='https://placehold.co/300x200?text=City+Camera+Offline';"
+              />
             </div>
-            <img 
-              src="https://traffic.ottawa.ca/map/camera?id=${camera.camera_number}" 
-              alt="Live Feed"
-              style="width: 100%; border-radius: 4px; margin-top: 10px; display: block;"
-              onerror="this.onerror=null; this.src='https://placehold.co/300x200?text=City+Camera+Offline';"
-            />
-          </div>
-        `;
+          `;
+        });
         
-        marker.bindPopup(popupContent);
         layerGroup.addLayer(marker);
       });
 
   } catch (error) {
-    console.error("Failed to fetch camera data:", error);
+    console.error("Failed to fetch Ottawa camera data:", error);
   }
 };
 
@@ -188,7 +212,7 @@ const fetchMtoCameras = async (layerGroup) => {
               <b style="font-size: 14px;">${camera.Location}</b><br/>
                <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
                 <span class="pulsing-dot"></span>
-                <span style="color: red; font-weight: bold;">LIVE REFRESHING</span>
+                <span style="color: red; font-weight: bold;">LIVE</span>
                 <span style="font-size: 11px; color: #666; margin-left: auto;">
                   Updated: <b id="time-${popupId}">${new Date().toLocaleTimeString()}</b>
                 </span>
