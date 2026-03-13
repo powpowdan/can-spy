@@ -8,6 +8,7 @@ import 'leaflet.markercluster';
 
 import quebecMockData from './quebecMockData.json';
 import torontoData from './torontoMockData.json';
+import wildlifeData from './wildlifeData.json';
 
 // Red for Ottawa City
 const redIcon = new L.Icon({
@@ -47,6 +48,51 @@ const purpleIcon = new L.Icon({
   popupAnchor: [1, -34],
   shadowSize: [41, 41]
 });
+
+const wildlifeIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const fetchWildlifeCameras = (layerGroup) => {
+  wildlifeData.features.forEach(feature => {
+    const [lng, lat] = feature.geometry.coordinates;
+    const { name, location, youtubeId } = feature.properties;
+
+    const marker = L.marker([lat, lng], { icon: wildlifeIcon });
+
+    // We add live=1 to force the live edge
+    // and t= timestamp to prevent caching issues
+    const liveUrl = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&live=1&modestbranding=1&rel=0&t=${new Date().getTime()}`;
+
+    const popupContent = `
+      <div style="width: 320px;">
+        <b style="font-size: 14px;">🌿 ${name}</b><br/>
+        <i style="font-size: 11px; color: #666;">${location}</i>
+        <div style="margin-top: 10px; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 4px; background: #000;">
+          <iframe 
+            src="${liveUrl}" 
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+            frameborder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+            allowfullscreen>
+          </iframe>
+        </div>
+        <div style="font-size: 10px; color: #999; margin-top: 8px; text-align: center;">
+          Note: If video appears delayed, click the "LIVE" button in the player.
+        </div>
+      </div>
+    `;
+
+    marker.bindPopup(popupContent, { maxWidth: 350 });
+    layerGroup.addLayer(marker);
+  });
+};
+
 const fetchTorontoCameras = (layerGroup) => {
   const cameras = torontoData.Data || [];
 
@@ -415,8 +461,10 @@ const cityCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.curre
       const mtoCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.current);
       const quebecCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.current);
       const torontoCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.current);
+      const wildlifeLayer = L.markerClusterGroup(clusterOptions).addTo(mapInstance.current);
       
      const overlayMaps = {
+      "Wildlife Cams": wildlifeLayer,
         "City of Ottawa": cityCameras,
         "City of Toronto": torontoCameras,
         "MTO": mtoCameras, 
@@ -424,7 +472,7 @@ const cityCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.curre
       };
 
       layerControlRef.current = L.control.layers(null, overlayMaps).addTo(mapInstance.current);
-
+      fetchWildlifeCameras(wildlifeLayer);  
       fetchOttawaCameras(cityCameras);
       fetchTorontoCameras(torontoCameras);
       fetchMtoCameras(mtoCameras);

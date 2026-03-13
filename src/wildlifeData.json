@@ -1,0 +1,77 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-107.4522, 49.1255] },
+      "properties": {
+        "name": "Plains Bison - Grasslands National Park",
+        "location": "Saskatchewan, Canada",
+        "youtubeId": "tJ0fHAHihPA"
+      }
+    },
+    {
+    "type": "Feature",
+    "geometry": { "type": "Point", "coordinates": [-91.7594, 43.3017] },
+    "properties": {
+      "name": "Decorah Eagles - North Nest",
+      "location": "Decorah, Iowa",
+      "youtubeId": "GGIE1E-kaMQ"
+    }
+  },
+  {
+    "type": "Feature",
+    "geometry": { "type": "Point", "coordinates": [-84.0400, 10.0300] },
+    "properties": {
+      "name": "Sloth Preschool - Toucan Rescue Ranch",
+      "location": "San Isidro, Costa Rica",
+      "youtubeId": "g_L1Ay8P244"
+    }
+  },
+  {
+    "type": "Feature",
+    "geometry": { "type": "Point", "coordinates": [-118.2611, 34.1139] },
+    "properties": {
+      "name": "Kitten Rescue Sanctuary",
+      "location": "Los Angeles, California",
+      "youtubeId": "-m_nQT62B4Y"
+    }
+  },
+  {
+    "type": "Feature",
+    "geometry": { "type": "Point", "coordinates": [-91.8276, 47.9054] },
+    "properties": {
+      "name": "International Wolf Center",
+      "location": "Ely, Minnesota",
+      "youtubeId": "5e4lsEe4Vew"
+    }
+  },
+  {
+    "type": "Feature",
+    "geometry": { "type": "Point", "coordinates": [-122.4661, 37.7699] },
+    "properties": {
+      "name": "Philippine Coral Reef - Steinhart Aquarium",
+      "location": "San Francisco, California",
+      "youtubeId": "DHUnz4dyb54"
+    }
+  },
+  {
+    "type": "Feature",
+    "geometry": { "type": "Point", "coordinates": [-118.5000, 33.4500] },
+    "properties": {
+      "name": "West End Bald Eagles",
+      "location": "Catalina Island, California",
+      "youtubeId": "RmmAzrAkKqI"
+    }
+  },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-93.4350, 58.4680] },
+      "properties": {
+        "name": "Polar Bears - Cape South Churchill",
+        "location": "Wapusk National Park, Manitoba",
+        "youtubeId": "lyX7ZxWU64A"
+      }
+    }
+  ]
+}
