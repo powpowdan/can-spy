@@ -7,6 +7,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import 'leaflet.markercluster';
 
 import quebecMockData from './quebecMockData.json';
+import torontoData from './torontoMockData.json';
 
 // Red for Ottawa City
 const redIcon = new L.Icon({
@@ -37,7 +38,73 @@ const greenIcon = new L.Icon({
   popupAnchor: [1, -34],
   shadowSize: [41, 41]
 });
- 
+// Green for Toronto
+const purpleIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+const fetchTorontoCameras = (layerGroup) => {
+  const cameras = torontoData.Data || [];
+
+  cameras.forEach(cam => {
+    const lat = parseFloat(cam.Latitude);
+    const lng = parseFloat(cam.Longitude);
+    const camNumber = cam.Number;
+    const camName = cam.Name;
+
+    if (!isNaN(lat) && !isNaN(lng) && camNumber) {
+      const marker = L.marker([lat, lng], { icon: purpleIcon });
+      
+     marker.bindPopup((layer) => {
+  const camNumber = cam.Number;
+  const camName = cam.Name;
+  const popupId = `popup-${camNumber}`;
+
+  // We use a small script that runs as soon as the popup is added to the map
+  setTimeout(() => {
+    const interval = setInterval(() => {
+      const img = document.getElementById(`img-${popupId}`);
+      const timeSpan = document.getElementById(`time-${popupId}`);
+      
+      if (img) {
+        // Update the image source with a new timestamp to force a refresh
+        img.src = `https://opendata.toronto.ca/transportation/tmc/rescucameraimages/CameraImages/loc${camNumber}.jpg?t=${new Date().getTime()}`;
+        if (timeSpan) timeSpan.innerText = new Date().toLocaleTimeString();
+      } else {
+        // If the user closed the popup, the image is gone, so stop the timer
+        clearInterval(interval);
+      }
+    }, 15000); // Refresh every 15 seconds
+  }, 100);
+
+  return `
+    <div style="width: 300px;">
+      <b style="font-size: 14px;">${camName}</b><br/>
+       <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px; margin-bottom: 10px;">
+        <span class="pulsing-dot"></span>
+        <span style="color: red; font-weight: bold;">LIVE</span>
+        <span style="font-size: 11px; color: #666; margin-left: auto;">
+          <b id="time-${popupId}">${new Date().toLocaleTimeString()}</b>
+        </span>
+      </div>
+      <img 
+        id="img-${popupId}"
+        src="https://opendata.toronto.ca/transportation/tmc/rescucameraimages/CameraImages/loc${camNumber}.jpg?t=${new Date().getTime()}" 
+        style="width: 100%; border-radius: 4px;"
+        onerror="this.src='https://placehold.co/300x200?text=Toronto+Feed+Offline';"
+      />
+    </div>
+  `;
+});
+
+      layerGroup.addLayer(marker);
+    }
+  });
+};
 const fetchOttawaCameras = async (layerGroup) => {
   try {
     const proxyUrl = "https://corsproxy.io/?";
@@ -297,9 +364,11 @@ const clusterOptions = {
 const cityCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.current);
       const mtoCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.current);
       const quebecCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.current);
+      const torontoCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.current);
       
      const overlayMaps = {
         "City of Ottawa": cityCameras,
+        "City of Toronto": torontoCameras,
         "MTO": mtoCameras, 
         "Québec 511 <span id='qc-layer-label' style='font-size: 11px; color: #d97706; font-style: italic; margin-left: 5px;'>(Loading 600+ live cams...) ⏳</span>": quebecCameras
       };
@@ -307,6 +376,7 @@ const cityCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.curre
       layerControlRef.current = L.control.layers(null, overlayMaps).addTo(mapInstance.current);
 
       fetchOttawaCameras(cityCameras);
+      fetchTorontoCameras(torontoCameras);
       fetchMtoCameras(mtoCameras);
       fetchQuebecCameras(quebecCameras);
   
