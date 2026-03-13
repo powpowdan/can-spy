@@ -161,23 +161,49 @@ const fetchMtoCameras = async (layerGroup) => {
     cameras.forEach(camera => {
       if (camera.Latitude && camera.Longitude && camera.Views?.length > 0) {
         const marker = L.marker([camera.Latitude, camera.Longitude], { icon: blueIcon });
-        const popupContent = `
-          <div style="width: 300px;">
-            <b style="font-size: 14px;">${camera.Location}</b><br/>
-             <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
-              <span class="pulsing-dot"></span>
-              <span style="color: red; font-weight: bold;">LIVE</span>
-              <span style="font-size: 11px; color: #666; margin-left: auto;">Updated: <span class="updated-timestamp">${new Date().toLocaleTimeString()}</span></span>
+        
+        // Use a unique ID for this specific popup's elements
+        const popupId = `mto-${camera.Id || Math.random().toString(36).substr(2, 9)}`;
+        const baseImageUrl = camera.Views[0].Url;
+
+        // BIND THE POPUP DYNAMICALLY
+        marker.bindPopup((layer) => {
+          // Every time the popup opens, we start a fresh 15s timer for JUST this image
+          setTimeout(() => {
+            const interval = setInterval(() => {
+              const img = document.getElementById(`img-${popupId}`);
+              const timeSpan = document.getElementById(`time-${popupId}`);
+              if (img) {
+                // Add a fresh timestamp to the URL to force the browser to actually download the new image
+                img.src = `${baseImageUrl}?t=${new Date().getTime()}`;
+                if (timeSpan) timeSpan.innerText = new Date().toLocaleTimeString();
+              } else {
+                clearInterval(interval);
+              }
+            }, 15000);
+          }, 100);
+
+          return `
+            <div style="width: 300px;">
+              <b style="font-size: 14px;">${camera.Location}</b><br/>
+               <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
+                <span class="pulsing-dot"></span>
+                <span style="color: red; font-weight: bold;">LIVE REFRESHING</span>
+                <span style="font-size: 11px; color: #666; margin-left: auto;">
+                  Updated: <b id="time-${popupId}">${new Date().toLocaleTimeString()}</b>
+                </span>
+              </div>
+              <img 
+                id="img-${popupId}"
+                src="${baseImageUrl}?t=${new Date().getTime()}" 
+                style="width: 100%; border-radius: 4px; margin-top: 10px;"
+                onerror="this.src='https://placehold.co/300x200?text=Highway+Cam+Offline';"
+              />
+              <p style="font-size: 11px; color: #666; margin-top: 8px;">Roadway: ${camera.Roadway}</p>
             </div>
-            <img 
-              src="${camera.Views[0].Url}" 
-              style="width: 100%; border-radius: 4px; margin-top: 10px;"
-              onerror="this.src='https://placehold.co/300x200?text=Highway+Cam+Offline';"
-            />
-            <p style="font-size: 11px; color: #666;">Roadway: ${camera.Roadway}</p>
-          </div>
-        `;
-        marker.bindPopup(popupContent);
+          `;
+        });
+
         layerGroup.addLayer(marker);
       }
     });
