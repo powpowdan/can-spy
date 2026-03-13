@@ -6,6 +6,8 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import 'leaflet.markercluster';
 
+import quebecMockData from './quebecMockData.json';
+
 // Red for Ottawa City
 const redIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
@@ -117,62 +119,126 @@ const fetchMtoCameras = async (layerGroup) => {
   }
 };
 
+// const fetchQuebecCameras = async (layerGroup) => {
+//   try {
+//     const proxy = "https://api.allorigins.win/get?url=";
+//     //  removed the srsname parameter so the server responds instantly again
+//     const targetUrl = 'https://ws.mapserver.transports.gouv.qc.ca/swtq?service=wfs&version=2.0.0&request=getfeature&typename=ms:infos_cameras&outputformat=geojson';
+//     const url = encodeURIComponent(targetUrl);
+    
+//     const response = await fetch(proxy + url);
+//     const wrapperData = await response.json(); 
+    
+//     if (!wrapperData || !wrapperData.contents) return;
+
+//     let data;
+//     try {
+//       let rawText = wrapperData.contents;
+//       if (rawText.startsWith('data:')) {
+//         const base64String = rawText.split(',')[1];
+//         rawText = decodeURIComponent(escape(atob(base64String))); 
+//       }
+//       data = JSON.parse(rawText);
+//     } catch (parseError) {
+//       console.error("Parse error:", parseError);
+//       return;
+//     }
+    
+//     if (!data || !Array.isArray(data.features)) {
+//       console.error("Quebec data fetch failed or proxy timed out.");
+//       const qcLabel = document.getElementById('qc-layer-label');
+//       if (qcLabel) qcLabel.innerHTML = "<span style='color: #dc2626;'> (Proxy timeout - Please refresh)</span>";
+//       return; 
+//     }
+
+//     console.log("✅ Successfully decoded Quebec data!");
+//     console.log(`📸 Found ${data.features.length} cameras from Quebec API.`);
+//     if (data.features.length > 0) {
+//        console.log("🔍 First camera data:", data.features[0]);
+//     } 
+
+//     data.features.forEach(feature => {
+//       if (feature.geometry && feature.geometry.coordinates) {
+        
+//         // --- Convert Web Mercator (meters) to Lat/Lng (degrees) ---
+//         const x = feature.geometry.coordinates[0];
+//         const y = feature.geometry.coordinates[1];
+        
+//         // Standard Spherical Mercator mathematical conversion
+//         const earthRadius = 6378137;
+//         const lng = (x / earthRadius) * (180 / Math.PI);
+//         const lat = (2 * Math.atan(Math.exp(y / earthRadius)) - (Math.PI / 2)) * (180 / Math.PI);
+//         // -------------------------------------------------------------------
+
+//         const marker = L.marker([lat, lng], { icon: greenIcon });
+        
+//    // Construct the hidden raw MP4 endpoint
+//         const videoUrl = `https://www.quebec511.info/Carte/Fenetres/camera.ashx?id=${feature.properties.IDEcamera}&format=mp4`;
+
+//         const popupContent = `
+//           <div style="width: 300px;">
+//             <b style="font-size: 14px;">${feature.properties.DescriptionLocalisationEn || feature.properties.DescriptionLocalisationFr || 'Camera'}</b><br/>
+//              <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px; margin-bottom: 10px;">
+//               <span class="pulsing-dot"></span>
+//               <span style="color: red; font-weight: bold;">LIVE</span>
+//               <span style="font-size: 11px; color: #666; margin-left: auto;">Updated: <span class="updated-timestamp">${new Date().toLocaleTimeString()}</span></span>
+//             </div>
+            
+//             <video 
+//               src="${videoUrl}" 
+//               autoplay 
+//               loop 
+//               muted 
+//               playsinline
+//               style="width: 100%; border-radius: 4px; background-color: #222;"
+//               onerror="this.outerHTML='<div style=\\'width:100%;height:160px;background:#222;color:#666;text-align:center;line-height:160px;border-radius:4px;\\'>Video Feed Offline</div>'"
+//             ></video>
+
+//           </div>
+//         `;
+//         marker.bindPopup(popupContent);
+//         layerGroup.addLayer(marker);
+//       }
+//     });
+//     const qcLabel = document.getElementById('qc-layer-label');
+//     if (qcLabel) {
+//       qcLabel.innerHTML = "Loaded <span style='font-size: 11px; color: #16a34a; margin-left: 5px;'>✓</span>";
+//     }
+//   } catch (error) {
+//     console.error("Network or fetch error with Quebec 511:", error);
+//     const qcLabel = document.getElementById('qc-layer-label');
+//     if (qcLabel) {
+//       qcLabel.innerHTML = "Québec 511 <span style='font-size: 11px; color: #dc2626; margin-left: 5px;'>(Failed to load)</span>";
+//     }
+//   }
+// };
+
+//MOCKDATA FUNC
 const fetchQuebecCameras = async (layerGroup) => {
   try {
-    const proxy = "https://api.allorigins.win/get?url=";
-    //  removed the srsname parameter so the server responds instantly again
-    const targetUrl = 'https://ws.mapserver.transports.gouv.qc.ca/swtq?service=wfs&version=2.0.0&request=getfeature&typename=ms:infos_cameras&outputformat=geojson';
-    const url = encodeURIComponent(targetUrl);
-    
-    const response = await fetch(proxy + url);
-    const wrapperData = await response.json(); 
-    
-    if (!wrapperData || !wrapperData.contents) return;
+    // We instantly assign the imported mock data! No fetching required.
+    const data = quebecMockData;
 
-    let data;
-    try {
-      let rawText = wrapperData.contents;
-      if (rawText.startsWith('data:')) {
-        const base64String = rawText.split(',')[1];
-        rawText = decodeURIComponent(escape(atob(base64String))); 
-      }
-      data = JSON.parse(rawText);
-    } catch (parseError) {
-      console.error("Parse error:", parseError);
-      return;
-    }
-    
     if (!data || !Array.isArray(data.features)) {
-      console.error("Quebec data fetch failed or proxy timed out.");
-      const qcLabel = document.getElementById('qc-layer-label');
-      if (qcLabel) qcLabel.innerHTML = "<span style='color: #dc2626;'> (Proxy timeout - Please refresh)</span>";
+      console.error("Mock data is missing features.");
       return; 
     }
-
-    console.log("✅ Successfully decoded Quebec data!");
-    console.log(`📸 Found ${data.features.length} cameras from Quebec API.`);
-    if (data.features.length > 0) {
-       console.log("🔍 First camera data:", data.features[0]);
-    } 
 
     data.features.forEach(feature => {
       if (feature.geometry && feature.geometry.coordinates) {
         
-        // --- Convert Web Mercator (meters) to Lat/Lng (degrees) ---
+        // Math to convert meters to GPS degrees
         const x = feature.geometry.coordinates[0];
         const y = feature.geometry.coordinates[1];
-        
-        // Standard Spherical Mercator mathematical conversion
         const earthRadius = 6378137;
         const lng = (x / earthRadius) * (180 / Math.PI);
         const lat = (2 * Math.atan(Math.exp(y / earthRadius)) - (Math.PI / 2)) * (180 / Math.PI);
-        // -------------------------------------------------------------------
 
         const marker = L.marker([lat, lng], { icon: greenIcon });
         
-   // Construct the hidden raw MP4 endpoint
+        // Construct the hidden raw MP4 endpoint
         const videoUrl = `https://www.quebec511.info/Carte/Fenetres/camera.ashx?id=${feature.properties.IDEcamera}&format=mp4`;
-
+        
         const popupContent = `
           <div style="width: 300px;">
             <b style="font-size: 14px;">${feature.properties.DescriptionLocalisationEn || feature.properties.DescriptionLocalisationFr || 'Camera'}</b><br/>
@@ -191,23 +257,21 @@ const fetchQuebecCameras = async (layerGroup) => {
               style="width: 100%; border-radius: 4px; background-color: #222;"
               onerror="this.outerHTML='<div style=\\'width:100%;height:160px;background:#222;color:#666;text-align:center;line-height:160px;border-radius:4px;\\'>Video Feed Offline</div>'"
             ></video>
-
           </div>
         `;
         marker.bindPopup(popupContent);
         layerGroup.addLayer(marker);
       }
     });
+
+    // Remove the loading text instantly
     const qcLabel = document.getElementById('qc-layer-label');
     if (qcLabel) {
-      qcLabel.innerHTML = "Loaded <span style='font-size: 11px; color: #16a34a; margin-left: 5px;'>✓</span>";
+      qcLabel.innerHTML = ""; 
     }
+
   } catch (error) {
-    console.error("Network or fetch error with Quebec 511:", error);
-    const qcLabel = document.getElementById('qc-layer-label');
-    if (qcLabel) {
-      qcLabel.innerHTML = "Québec 511 <span style='font-size: 11px; color: #dc2626; margin-left: 5px;'>(Failed to load)</span>";
-    }
+    console.error("Error processing mock Quebec data:", error);
   }
 };
 
