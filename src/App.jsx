@@ -161,7 +161,10 @@ const fetchQuebecCameras = async (layerGroup) => {
 
         const marker = L.marker([lat, lng], { icon: greenIcon });
         
-     const popupContent = `
+   // Construct the hidden raw MP4 endpoint
+        const videoUrl = `https://www.quebec511.info/Carte/Fenetres/camera.ashx?id=${feature.properties.IDEcamera}&format=mp4`;
+
+        const popupContent = `
           <div style="width: 300px;">
             <b style="font-size: 14px;">${feature.properties.DescriptionLocalisationEn || feature.properties.DescriptionLocalisationFr || 'Camera'}</b><br/>
              <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px; margin-bottom: 10px;">
@@ -170,20 +173,15 @@ const fetchQuebecCameras = async (layerGroup) => {
               <span style="font-size: 11px; color: #666; margin-left: auto;">Updated: <span class="updated-timestamp">${new Date().toLocaleTimeString()}</span></span>
             </div>
             
-            <div style="width: 100%; height: 160px; background-color: #222; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #444;">
-               <span style="font-size: 28px; margin-bottom: 8px;">🎥</span>
-               <span style="color: #ccc; font-size: 11px; text-align: center; padding: 0 15px; margin-bottom: 12px;">
-                 Feed secured by Québec 511
-               </span>
-               <a 
-                 href="${feature.properties.URL_FLUX_DONNEE}" 
-                 target="_blank" 
-                 rel="noopener noreferrer" 
-                 style="background-color: #28a745; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 12px; cursor: pointer;"
-               >
-                 View Live Stream ↗
-               </a>
-            </div>
+            <video 
+              src="${videoUrl}" 
+              autoplay 
+              loop 
+              muted 
+              playsinline
+              style="width: 100%; border-radius: 4px; background-color: #222;"
+              onerror="this.outerHTML='<div style=\\'width:100%;height:160px;background:#222;color:#666;text-align:center;line-height:160px;border-radius:4px;\\'>Video Feed Offline</div>'"
+            ></video>
 
           </div>
         `;
@@ -228,26 +226,41 @@ export default function App() {
       fetchMtoCameras(mtoCameras);
       fetchQuebecCameras(quebecCameras);
   
-      mapInstance.current.on('popupopen', (e) => {
+    mapInstance.current.on('popupopen', (e) => {
         activePopupRef.current = e.popup;
         const popupElement = activePopupRef.current.getElement();
         if (!popupElement) return;
 
+        // Look for either an image OR a video
         const img = popupElement.querySelector('img');
+        const video = popupElement.querySelector('video'); 
         const timestampSpan = popupElement.querySelector('.updated-timestamp');
 
-        if (img) {
+        if (img || video) {
           refreshIntervalIdRef.current = setInterval(() => {
             if (!activePopupRef.current) {
               clearInterval(refreshIntervalIdRef.current);
               return;
             }
-            const newSrc = img.src.split('&t=')[0] + '&t=' + Date.now();
-            img.src = newSrc;
+            
+            // Refresh Image (Ottawa & MTO)
+            if (img) {
+              const newSrc = img.src.split('&t=')[0] + '&t=' + Date.now();
+              img.src = newSrc;
+            }
+
+            // Refresh Video (Québec 511)
+            if (video) {
+               // Grabbing a fresh 5-second MP4 clip
+               const newSrc = video.src.split('&t=')[0] + '&t=' + Date.now();
+               video.src = newSrc;
+               video.play(); // Ensure it keeps playing after the source swap
+            }
+
             if (timestampSpan) {
               timestampSpan.innerText = new Date().toLocaleTimeString();
             }
-          }, 15000);
+          }, 15000); // Refreshes every 15 seconds
         }
       });
 
