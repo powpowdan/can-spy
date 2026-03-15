@@ -1,67 +1,89 @@
-import React, { useEffect, useRef, useState } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import React, { useEffect, useRef, useState } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
-import 'leaflet.markercluster/dist/MarkerCluster.css';
-import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
-import 'leaflet.markercluster';
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
+import "leaflet.markercluster";
 
-import quebecMockData from './quebecMockData.json';
-import torontoData from './torontoMockData.json';
-import wildlifeData from './wildlifeData.json';
+import quebecMockData from "./quebecMockData.json";
+import torontoData from "./torontoMockData.json";
+import wildlifeData from "./wildlifeData.json";
 
 // Red for Ottawa City
 const redIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+  shadowSize: [41, 41],
 });
 
 // Blue for MTO/Highway
 const blueIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+  shadowSize: [41, 41],
 });
 
 // Green for Quebec 511
 const greenIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+  shadowSize: [41, 41],
 });
 
 // Violet for Toronto
 const purpleIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+  shadowSize: [41, 41],
+});
+
+// Orange for Alberta 511
+const orangeIcon = new L.Icon({
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
 });
 
 // gold for Wildlife
 const wildlifeIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+  shadowSize: [41, 41],
 });
 
 const fetchWildlifeCameras = (layerGroup) => {
-  wildlifeData.features.forEach(feature => {
+  wildlifeData.features.forEach((feature) => {
     const [lng, lat] = feature.geometry.coordinates;
     const { name, location, youtubeId } = feature.properties;
 
@@ -96,7 +118,7 @@ const fetchWildlifeCameras = (layerGroup) => {
 const fetchTorontoCameras = (layerGroup) => {
   const cameras = torontoData.Data || [];
 
-  cameras.forEach(cam => {
+  cameras.forEach((cam) => {
     const lat = parseFloat(cam.Latitude);
     const lng = parseFloat(cam.Longitude);
     const camNumber = cam.Number;
@@ -104,7 +126,7 @@ const fetchTorontoCameras = (layerGroup) => {
 
     if (!isNaN(lat) && !isNaN(lng) && camNumber) {
       const marker = L.marker([lat, lng], { icon: purpleIcon });
-      
+
       marker.bindPopup(() => {
         const popupId = `popup-${camNumber}`;
         return `
@@ -130,26 +152,78 @@ const fetchTorontoCameras = (layerGroup) => {
     }
   });
 };
+const fetchAlbertaCameras = async (layerGroup, setAlbertaCount) => {
+  try {
+    const proxy = "https://corsproxy.io/?";
+    const url = encodeURIComponent("https://511.alberta.ca/api/v2/get/cameras");
 
+    const response = await fetch(proxy + url);
+    const cameras = await response.json();
+
+    setAlbertaCount(cameras.length);
+
+    cameras.forEach((camera) => {
+      if (camera.Latitude && camera.Longitude && camera.Views?.length > 0) {
+        const marker = L.marker([camera.Latitude, camera.Longitude], {
+          icon: orangeIcon,
+        });
+
+        marker.bindPopup(() => {
+          // Prepend "ab-" to ensure popup IDs never clash with Ontario MTO cameras
+          const popupId = `ab-${camera.Id || Math.random().toString(36).substr(2, 9)}`;
+          const baseImageUrl = camera.Views[0].Url;
+
+          return `
+            <div style="width: 300px;">
+              <b style="font-size: 14px;">${camera.Location}</b><br/>
+               <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
+                <span class="pulsing-dot"></span>
+                <span style="color: red; font-weight: bold;">LIVE</span>
+                <span style="font-size: 11px; color: #666; margin-left: auto;">
+                  Sync Time: <b id="time-${popupId}" class="updated-timestamp">${new Date().toLocaleTimeString()}</b>
+                </span>
+              </div>
+              <img 
+                id="img-${popupId}"
+                src="${baseImageUrl}?t=${new Date().getTime()}" 
+                style="width: 100%; border-radius: 4px; margin-top: 10px;"
+                onerror="this.src='https://placehold.co/300x200?text=Alberta+Cam+Offline';"
+              />
+              <p style="font-size: 11px; color: #666; margin-top: 8px;">Roadway: ${camera.Roadway}</p>
+            </div>
+          `;
+        });
+
+        layerGroup.addLayer(marker);
+      }
+    });
+  } catch (error) {
+    console.error("Failed to fetch Alberta data:", error);
+  }
+};
 const fetchOttawaCameras = async (layerGroup, setOttawaCount) => {
   try {
     const proxyUrl = "https://corsproxy.io/?";
     const targetUrl = "https://traffic.ottawa.ca/map/service/camera";
-    
+
     const response = await fetch(proxyUrl + encodeURIComponent(targetUrl));
     const data = await response.json();
 
-    const cameraList = Array.isArray(data) ? data : (data.cameras || []);
+    const cameraList = Array.isArray(data) ? data : data.cameras || [];
     if (cameraList.length === 0) return;
 
     // UPDATE LEGEND COUNT
     setOttawaCount(cameraList.length);
 
     cameraList
-      .filter(camera => camera.type === 'camera' || camera.camera_number < 2000)
-      .forEach(camera => {
-        const marker = L.marker([camera.latitude, camera.longitude], { icon: redIcon });
-        
+      .filter(
+        (camera) => camera.type === "camera" || camera.camera_number < 2000,
+      )
+      .forEach((camera) => {
+        const marker = L.marker([camera.latitude, camera.longitude], {
+          icon: redIcon,
+        });
+
         marker.bindPopup(() => {
           const camId = camera.camera_number;
           const popupId = `ottawa-${camId}`;
@@ -175,10 +249,9 @@ const fetchOttawaCameras = async (layerGroup, setOttawaCount) => {
             </div>
           `;
         });
-        
+
         layerGroup.addLayer(marker);
       });
-
   } catch (error) {
     console.error("Failed to fetch Ottawa camera data:", error);
   }
@@ -187,18 +260,20 @@ const fetchOttawaCameras = async (layerGroup, setOttawaCount) => {
 const fetchMtoCameras = async (layerGroup, setMtoCount) => {
   try {
     const proxy = "https://corsproxy.io/?";
-    const url = encodeURIComponent('https://511on.ca/api/v2/get/cameras');
-    
+    const url = encodeURIComponent("https://511on.ca/api/v2/get/cameras");
+
     const response = await fetch(proxy + url);
     const cameras = await response.json();
-    
+
     // UPDATE LEGEND COUNT
     setMtoCount(cameras.length);
-    
-    cameras.forEach(camera => {
+
+    cameras.forEach((camera) => {
       if (camera.Latitude && camera.Longitude && camera.Views?.length > 0) {
-        const marker = L.marker([camera.Latitude, camera.Longitude], { icon: blueIcon });
-        
+        const marker = L.marker([camera.Latitude, camera.Longitude], {
+          icon: blueIcon,
+        });
+
         marker.bindPopup(() => {
           const popupId = `mto-${camera.Id || Math.random().toString(36).substr(2, 9)}`;
           const baseImageUrl = camera.Views[0].Url;
@@ -238,26 +313,27 @@ const fetchQuebecCameras = async (layerGroup) => {
 
     if (!data || !Array.isArray(data.features)) {
       console.error("Mock data is missing features.");
-      return; 
+      return;
     }
 
-    data.features.forEach(feature => {
+    data.features.forEach((feature) => {
       if (feature.geometry && feature.geometry.coordinates) {
-        
         const x = feature.geometry.coordinates[0];
         const y = feature.geometry.coordinates[1];
         const earthRadius = 6378137;
         const lng = (x / earthRadius) * (180 / Math.PI);
-        const lat = (2 * Math.atan(Math.exp(y / earthRadius)) - (Math.PI / 2)) * (180 / Math.PI);
+        const lat =
+          (2 * Math.atan(Math.exp(y / earthRadius)) - Math.PI / 2) *
+          (180 / Math.PI);
 
         const marker = L.marker([lat, lng], { icon: greenIcon });
-        
+
         marker.bindPopup(() => {
           const videoUrl = `https://www.quebec511.info/Carte/Fenetres/camera.ashx?id=${feature.properties.IDEcamera}&format=mp4`;
-          
+
           return `
             <div style="width: 300px;">
-              <b style="font-size: 14px;">${feature.properties.DescriptionLocalisationEn || feature.properties.DescriptionLocalisationFr || 'Camera'}</b><br/>
+              <b style="font-size: 14px;">${feature.properties.DescriptionLocalisationEn || feature.properties.DescriptionLocalisationFr || "Camera"}</b><br/>
                <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px; margin-bottom: 10px;">
                 <span class="pulsing-dot"></span>
                 <span style="color: red; font-weight: bold;">LIVE</span>
@@ -276,21 +352,19 @@ const fetchQuebecCameras = async (layerGroup) => {
             </div>
           `;
         });
-        
+
         layerGroup.addLayer(marker);
       }
     });
 
-    const qcLabel = document.getElementById('qc-layer-label');
+    const qcLabel = document.getElementById("qc-layer-label");
     if (qcLabel) {
-      qcLabel.innerHTML = ""; 
+      qcLabel.innerHTML = "";
     }
-
   } catch (error) {
     console.error("Error processing mock Quebec data:", error);
   }
 };
-
 
 export default function App() {
   const mapContainer = useRef(null);
@@ -298,65 +372,98 @@ export default function App() {
   const layerControlRef = useRef(null);
   const refreshIntervalIdRef = useRef(null);
   const activePopupRef = useRef(null);
-  
+
   const [isLegendOpen, setIsLegendOpen] = useState(true);
-  
+
   // Legend State Totals
   const [ottawaCount, setOttawaCount] = useState(0);
   const [mtoCount, setMtoCount] = useState(0);
+  const [albertaCount, setAlbertaCount] = useState(0);
   const torontoCount = torontoData.Data ? torontoData.Data.length : 0;
-  const quebecCount = quebecMockData.features ? quebecMockData.features.length : 0;
-  const wildlifeCount = wildlifeData.features ? wildlifeData.features.length : 0;
-  const totalCameras = ottawaCount + mtoCount + torontoCount + quebecCount + wildlifeCount;
+  const quebecCount = quebecMockData.features
+    ? quebecMockData.features.length
+    : 0;
+  const wildlifeCount = wildlifeData.features
+    ? wildlifeData.features.length
+    : 0;
+  const totalCameras =
+    ottawaCount +
+    mtoCount +
+    albertaCount +
+    torontoCount +
+    quebecCount +
+    wildlifeCount;
 
   useEffect(() => {
     if (!mapInstance.current) {
       // Initialize map
-      mapInstance.current = L.map(mapContainer.current).setView([45.4215, -75.6972], 10);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
+      mapInstance.current = L.map(mapContainer.current).setView(
+        [45.4215, -75.6972],
+        10,
+      );
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap contributors",
       }).addTo(mapInstance.current);
 
       const clusterOptions = {
         maxClusterRadius: 65,
-        disableClusteringAtZoom: 14 
+        disableClusteringAtZoom: 14,
       };
 
       // Initialize layer groups
-      const cityCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.current);
-      const mtoCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.current);
-      const quebecCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.current);
-      const torontoCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.current);
-      const wildlifeLayer = L.markerClusterGroup(clusterOptions).addTo(mapInstance.current);
-      
+      const cityCameras = L.markerClusterGroup(clusterOptions).addTo(
+        mapInstance.current,
+      );
+      const mtoCameras = L.markerClusterGroup(clusterOptions).addTo(
+        mapInstance.current,
+      );
+      const quebecCameras = L.markerClusterGroup(clusterOptions).addTo(
+        mapInstance.current,
+      );
+      const torontoCameras = L.markerClusterGroup(clusterOptions).addTo(
+        mapInstance.current,
+      );
+      const albertaCameras = L.markerClusterGroup(clusterOptions).addTo(
+        mapInstance.current,
+      );
+      const wildlifeLayer = L.markerClusterGroup(clusterOptions).addTo(
+        mapInstance.current,
+      );
+
       const overlayMaps = {
         "Wildlife Cams": wildlifeLayer,
         "City of Ottawa": cityCameras,
         "City of Toronto": torontoCameras,
-        "MTO": mtoCameras, 
-        "Québec 511 <span id='qc-layer-label' style='font-size: 11px; color: #d97706; font-style: italic; margin-left: 5px;'>(Loading 600+ live cams...) ⏳</span>": quebecCameras
+        "Ontario 511": mtoCameras,
+        "Alberta 511": albertaCameras,
+        "Québec 511 <span id='qc-layer-label' style='font-size: 11px; color: #d97706; font-style: italic; margin-left: 5px;'>(Loading 600+ live cams...) ⏳</span>":
+          quebecCameras,
       };
 
-      layerControlRef.current = L.control.layers(null, overlayMaps).addTo(mapInstance.current);
-      
+      layerControlRef.current = L.control
+        .layers(null, overlayMaps)
+        .addTo(mapInstance.current);
+
       // Pass state setters to dynamic fetches
-      fetchWildlifeCameras(wildlifeLayer);  
+      fetchWildlifeCameras(wildlifeLayer);
       fetchOttawaCameras(cityCameras, setOttawaCount);
       fetchTorontoCameras(torontoCameras);
       fetchMtoCameras(mtoCameras, setMtoCount);
       fetchQuebecCameras(quebecCameras);
-  
+      fetchAlbertaCameras(albertaCameras, setAlbertaCount);
+
       // GLOBAL POPUP WATCHER
-      mapInstance.current.on('popupopen', (e) => {
-        if (refreshIntervalIdRef.current) clearInterval(refreshIntervalIdRef.current);
+      mapInstance.current.on("popupopen", (e) => {
+        if (refreshIntervalIdRef.current)
+          clearInterval(refreshIntervalIdRef.current);
 
         activePopupRef.current = e.popup;
         const popupElement = activePopupRef.current.getElement();
         if (!popupElement) return;
 
-        const img = popupElement.querySelector('img');
-        const video = popupElement.querySelector('video'); 
-        const timestampSpan = popupElement.querySelector('.updated-timestamp');
+        const img = popupElement.querySelector("img");
+        const video = popupElement.querySelector("video");
+        const timestampSpan = popupElement.querySelector(".updated-timestamp");
 
         if (img || video) {
           refreshIntervalIdRef.current = setInterval(() => {
@@ -364,33 +471,33 @@ export default function App() {
               clearInterval(refreshIntervalIdRef.current);
               return;
             }
-            
+
             // Image Refresh (Strips old timestamps safely for both format types)
             if (img) {
               let rawUrl = img.src;
-              if (rawUrl.includes('?t=')) rawUrl = rawUrl.split('?t=')[0];
-              else if (rawUrl.includes('&t=')) rawUrl = rawUrl.split('&t=')[0];
-              
-              const separator = rawUrl.includes('?') ? '&t=' : '?t=';
+              if (rawUrl.includes("?t=")) rawUrl = rawUrl.split("?t=")[0];
+              else if (rawUrl.includes("&t=")) rawUrl = rawUrl.split("&t=")[0];
+
+              const separator = rawUrl.includes("?") ? "&t=" : "?t=";
               img.src = `${rawUrl}${separator}${Date.now()}`;
             }
 
             // Video Refresh
             if (video) {
-               let rawUrl = video.src;
-               if (rawUrl.includes('&t=')) rawUrl = rawUrl.split('&t=')[0];
-               video.src = `${rawUrl}&t=${Date.now()}`;
-               video.play(); 
+              let rawUrl = video.src;
+              if (rawUrl.includes("&t=")) rawUrl = rawUrl.split("&t=")[0];
+              video.src = `${rawUrl}&t=${Date.now()}`;
+              video.play();
             }
 
             if (timestampSpan) {
               timestampSpan.innerText = new Date().toLocaleTimeString();
             }
-          }, 15000); 
+          }, 15000);
         }
       });
 
-      mapInstance.current.on('popupclose', () => {
+      mapInstance.current.on("popupclose", () => {
         if (refreshIntervalIdRef.current) {
           clearInterval(refreshIntervalIdRef.current);
           refreshIntervalIdRef.current = null;
@@ -400,91 +507,131 @@ export default function App() {
     }
 
     return () => {
-        if (refreshIntervalIdRef.current) {
-            clearInterval(refreshIntervalIdRef.current);
-        }
-        if (mapInstance.current) {
-            mapInstance.current.remove();
-            mapInstance.current = null;
-        }
+      if (refreshIntervalIdRef.current) {
+        clearInterval(refreshIntervalIdRef.current);
+      }
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+      }
     };
   }, []);
 
   return (
-  <div style={{ position: 'relative' }}>
-    <div
-      ref={mapContainer}
-      style={{ height: '100vh', width: '100vw' }}
-    />
+    <div style={{ position: "relative" }}>
+      <div ref={mapContainer} style={{ height: "100vh", width: "100vw" }} />
 
-    <div style={{
-      position: 'absolute',
-      bottom: '30px',
-      right: '20px',
-      zIndex: 1000
-    }}>
-      <div className="map-legend">
-        <div 
-          className="legend-header"
-          onClick={() => setIsLegendOpen(!isLegendOpen)}
-          style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isLegendOpen ? '8px' : '0px' }}
-        >
-          <span>🛰️ SYSTEM: ONLINE</span>
-          <span style={{ marginLeft: '10px' }}>{isLegendOpen ? '▼' : '▲'}</span>
+      <div
+        style={{
+          position: "absolute",
+          bottom: "30px",
+          right: "20px",
+          zIndex: 1000,
+        }}
+      >
+        <div className="map-legend">
+          <div
+            className="legend-header"
+            onClick={() => setIsLegendOpen(!isLegendOpen)}
+            style={{
+              cursor: "pointer",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: isLegendOpen ? "8px" : "0px",
+            }}
+          >
+            <span>CAMERAS: ONLINE</span>
+            <span style={{ marginLeft: "10px" }}>
+              {isLegendOpen ? "▼" : "▲"}
+            </span>
+          </div>
+
+          {isLegendOpen && (
+            <>
+              <div className="legend-item">
+                <span
+                  className="dot"
+                  style={{ backgroundColor: "#e81123" }}
+                ></span>
+                <span>Ottawa Municipal</span>
+                <span className="count-badge">{ottawaCount}</span>
+              </div>
+
+              <div className="legend-item">
+                <span
+                  className="dot"
+                  style={{ backgroundColor: "#a020f0" }}
+                ></span>
+                <span>Toronto Municipal</span>
+                <span className="count-badge">{torontoCount}</span>
+              </div>
+
+              <div className="legend-item">
+                <span
+                  className="dot"
+                  style={{ backgroundColor: "#0078d7" }}
+                ></span>
+                <span>Ontario 511 (MTO)</span>
+                <span className="count-badge">{mtoCount}</span>
+              </div>
+
+              <div className="legend-item">
+                <span
+                  className="dot"
+                  style={{ backgroundColor: "#00cc00" }}
+                ></span>
+                <span>Québec (Live Video)</span>
+                <span className="count-badge">{quebecCount}</span>
+              </div>
+
+              <div className="legend-item">
+                <span
+                  className="dot"
+                  style={{ backgroundColor: "#ff8c00" }}
+                ></span>
+                <span>Alberta 511</span>
+                <span className="count-badge">{albertaCount}</span>
+              </div>
+
+              <div className="legend-item">
+                <span
+                  className="dot"
+                  style={{ backgroundColor: "#f0f70d" }}
+                ></span>
+                <span>Wildlife & Nature</span>
+                <span className="count-badge">{wildlifeCount}</span>
+              </div>
+
+              <div
+                style={{
+                  marginTop: "12px",
+                  paddingTop: "8px",
+                  borderTop: "1px solid #333",
+                  fontSize: "11px",
+                  color: "#00ff00",
+                  display: "flex",
+                  justifyContent: "space-between",
+                }}
+              >
+                <span>TOTAL FEEDS:</span>
+                <span>{totalCameras}</span>
+              </div>
+
+              <div
+                style={{
+                  marginTop: "10px",
+                  fontSize: "10px",
+                  color: "#888",
+                  textAlign: "center",
+                }}
+              >
+                Auto-Refresh: 15s
+              </div>
+            </>
+          )}
         </div>
-        
-        {isLegendOpen && (
-          <>
-            <div className="legend-item">
-              <span className="dot" style={{ backgroundColor: '#e81123' }}></span>
-              <span>Ottawa Municipal</span>
-              <span className="count-badge">{ottawaCount}</span>
-            </div>
-            
-            <div className="legend-item">
-              <span className="dot" style={{ backgroundColor: '#a020f0' }}></span>
-              <span>Toronto Municipal</span>
-              <span className="count-badge">{torontoCount}</span>
-            </div>
-            
-            <div className="legend-item">
-              <span className="dot" style={{ backgroundColor: '#0078d7' }}></span>
-              <span>Ontario 511 (MTO)</span>
-              <span className="count-badge">{mtoCount}</span>
-            </div>
-            
-            <div className="legend-item">
-              <span className="dot" style={{ backgroundColor: '#00cc00' }}></span>
-              <span>Québec (Live Video)</span>
-              <span className="count-badge">{quebecCount}</span>
-            </div>
-
-             <div className="legend-item">
-              <span className="dot" style={{ backgroundColor: '#f0f70d' }}></span>
-              <span>Wildlife & Nature</span>
-              <span className="count-badge">{wildlifeCount}</span>
-            </div>
-
-            <div style={{ 
-              marginTop: '12px', 
-              paddingTop: '8px', 
-              borderTop: '1px solid #333',
-              fontSize: '11px', 
-              color: '#00ff00', 
-              display: 'flex',
-              justifyContent: 'space-between'
-            }}>
-              <span>TOTAL FEEDS:</span>
-              <span>{totalCameras}</span>
-            </div>
-
-            <div style={{ marginTop: '10px', fontSize: '10px', color: '#888', textAlign: 'center' }}>
-              Auto-Refresh: 15s
-            </div>
-          </>
-        )}
       </div>
     </div>
-  </div>
   );
 }
