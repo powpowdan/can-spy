@@ -9,6 +9,8 @@ import "leaflet.markercluster";
 import quebecMockData from "./quebecMockData.json";
 import torontoData from "./torontoMockData.json";
 import wildlifeData from "./wildlifeData.json";
+import bcMockData from "./bcMockData.json";
+
 
 // Red for Ottawa City
 const redIcon = new L.Icon({
@@ -68,6 +70,15 @@ const orangeIcon = new L.Icon({
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
   shadowSize: [41, 41],
+});
+
+const yellowIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
 });
 
 // gold for Wildlife
@@ -366,6 +377,63 @@ const fetchQuebecCameras = async (layerGroup) => {
   }
 };
 
+ 
+// PROPER DRIVE BC FETCH (Using New URL Structure)
+const fetchBcCameras = (layerGroup, setBcCount) => {
+  try {
+    const cameras = bcMockData;
+    if (!cameras || cameras.length === 0) return;
+    
+    let validCameras = 0;
+    
+    cameras.forEach(camera => {
+      const lat = parseFloat(camera.latitude);
+      const lng = parseFloat(camera.longitude);
+      const camName = camera.camName || "DriveBC Cam";
+      const camId = camera.id;
+      
+      // BUILD THE NEW URL DIRECTLY USING THE ID
+      const imgUrl = `https://www.drivebc.ca/images/${camId}.jpg`;
+      
+      // Make sure we have a valid ID and coordinates before plotting
+      if (!isNaN(lat) && !isNaN(lng) && camId) {
+        validCameras++;
+        const marker = L.marker([lat, lng], { icon: yellowIcon });
+        
+        marker.bindPopup(() => {
+          const popupId = `bc-${String(camId).replace(/[^a-zA-Z0-9]/g, '')}`;
+
+          return `
+            <div style="width: 300px;">
+              <b style="font-size: 14px;">${camName}</b><br/>
+               <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
+                <span class="pulsing-dot"></span>
+                <span style="color: red; font-weight: bold;">LIVE</span>
+                <span style="font-size: 11px; color: #666; margin-left: auto;">
+                  Sync Time: <b id="time-${popupId}" class="updated-timestamp">${new Date().toLocaleTimeString()}</b>
+                </span>
+              </div>
+              <img 
+                id="img-${popupId}"
+                src="${imgUrl}?t=${new Date().getTime()}" 
+                referrerpolicy="no-referrer"
+                style="width: 100%; border-radius: 4px; margin-top: 10px;"
+                onerror="this.onerror=null; this.src='https://placehold.co/300x200?text=DriveBC+Cam+Offline';"
+              />
+            </div>
+          `;
+        });
+        layerGroup.addLayer(marker);
+      }
+    });
+    
+    setBcCount(validCameras);
+    
+  } catch (error) {
+    console.error("Error processing BC JSON data:", error);
+  }
+};
+
 export default function App() {
   const mapContainer = useRef(null);
   const mapInstance = useRef(null);
@@ -379,6 +447,7 @@ export default function App() {
   const [ottawaCount, setOttawaCount] = useState(0);
   const [mtoCount, setMtoCount] = useState(0);
   const [albertaCount, setAlbertaCount] = useState(0);
+  const [bcCount, setBcCount] = useState(0);
   const torontoCount = torontoData.Data ? torontoData.Data.length : 0;
   const quebecCount = quebecMockData.features
     ? quebecMockData.features.length
@@ -392,6 +461,7 @@ export default function App() {
     albertaCount +
     torontoCount +
     quebecCount +
+    bcCount +
     wildlifeCount;
 
   useEffect(() => {
@@ -429,6 +499,7 @@ export default function App() {
       const wildlifeLayer = L.markerClusterGroup(clusterOptions).addTo(
         mapInstance.current,
       );
+      const bcCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.current);
 
       const overlayMaps = {
         "Wildlife Cams": wildlifeLayer,
@@ -436,6 +507,7 @@ export default function App() {
         "City of Toronto": torontoCameras,
         "Ontario 511": mtoCameras,
         "Alberta 511": albertaCameras,
+        "British Columbia 511": bcCameras,
         "Québec 511 <span id='qc-layer-label' style='font-size: 11px; color: #d97706; font-style: italic; margin-left: 5px;'>(Loading 600+ live cams...) ⏳</span>":
           quebecCameras,
       };
@@ -451,6 +523,7 @@ export default function App() {
       fetchMtoCameras(mtoCameras, setMtoCount);
       fetchQuebecCameras(quebecCameras);
       fetchAlbertaCameras(albertaCameras, setAlbertaCount);
+      fetchBcCameras(bcCameras, setBcCount);
 
       // GLOBAL POPUP WATCHER
       mapInstance.current.on("popupopen", (e) => {
@@ -593,6 +666,11 @@ export default function App() {
                 <span>Alberta 511</span>
                 <span className="count-badge">{albertaCount}</span>
               </div>
+            <div className="legend-item">
+  <span className="dot" style={{ backgroundColor: '#ffea00' }}></span>
+  <span>DriveBC</span>
+  <span className="count-badge">{bcCount}</span>
+</div>
 
               <div className="legend-item">
                 <span
