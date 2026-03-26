@@ -16,7 +16,7 @@ import sydneyData from "./sydneyData.json";
 import chicagoData from "./chicagoData.json";
 import ottawaData from './ottawaData.json';
 import ontarioData from './ontarioData.json';
-// import albertaData from './albertaData.json';
+import albertaData from './albertaData.json';
 
 // Red for Ottawa City
 const redIcon = new L.Icon({
@@ -183,44 +183,46 @@ const fetchTorontoCameras = (layerGroup) => {
     }
   });
 };
-const fetchAlbertaCameras = async (layerGroup, setAlbertaCount) => {
+ const fetchAlbertaCameras = (layerGroup, setAlbertaCount) => {
   try {
-    const proxy = "https://corsproxy.io/?";
-    const url = encodeURIComponent("https://511.alberta.ca/api/v2/get/cameras");
+    // Alberta 511 returns a clean array
+    const cameras = Array.isArray(albertaData) ? albertaData : [];
+    
+    if (cameras.length === 0) return;
 
-    const response = await fetch(proxy + url);
-    const cameras = await response.json();
-
+    // UPDATE LEGEND COUNT
     setAlbertaCount(cameras.length);
 
     cameras.forEach((camera) => {
-      if (camera.Latitude && camera.Longitude && camera.Views?.length > 0) {
+      // Check for Latitude and Longitude (Capitalized)
+      if (camera.Latitude && camera.Longitude) {
         const marker = L.marker([camera.Latitude, camera.Longitude], {
-          icon: orangeIcon,
+          icon: yellowIcon, // Use yellow for Alberta to distinguish from Ontario
         });
 
         marker.bindPopup(() => {
-          // Prepend "ab-" to ensure popup IDs never clash with Ontario MTO cameras
-          const popupId = `ab-${camera.Id || Math.random().toString(36).substr(2, 9)}`;
-          const baseImageUrl = camera.Views[0].Url;
+          const popupId = `alb-${camera.Id}`;
+          // Get the URL from the first view available
+          const baseImageUrl = camera.Url || (camera.Views && camera.Views[0]?.Url);
+          const proxiedImg = `https://wsrv.nl/?url=${encodeURIComponent(baseImageUrl)}&t=${Date.now()}`;
 
           return `
             <div style="width: 300px;">
-              <b style="font-size: 14px;">${camera.Location}</b><br/>
+              <b style="font-size: 14px;">🏔️ ${camera.Description || 'Alberta Highway'}</b><br/>
                <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
                 <span class="pulsing-dot"></span>
                 <span style="color: red; font-weight: bold;">LIVE</span>
                 <span style="font-size: 11px; color: #666; margin-left: auto;">
-                  Sync Time: <b id="time-${popupId}" class="updated-timestamp">${new Date().toLocaleTimeString()}</b>
+                  Updated: <b class="updated-timestamp">${new Date().toLocaleTimeString()}</b>
                 </span>
               </div>
               <img 
                 id="img-${popupId}"
-                src="${baseImageUrl}?t=${new Date().getTime()}" 
-                style="width: 100%; border-radius: 4px; margin-top: 10px;"
+                src="${proxiedImg}" 
+                style="width: 100%; border-radius: 4px; margin-top: 10px; background-color: #222;"
                 onerror="this.src='https://placehold.co/300x200?text=Alberta+Cam+Offline';"
               />
-              <p style="font-size: 11px; color: #666; margin-top: 8px;">Roadway: ${camera.Roadway}</p>
+              <p style="font-size: 11px; color: #666; margin-top: 8px;">Roadway: ${camera.Roadway || 'AB Highway'}</p>
             </div>
           `;
         });
@@ -229,16 +231,16 @@ const fetchAlbertaCameras = async (layerGroup, setAlbertaCount) => {
       }
     });
   } catch (error) {
-    console.error("Failed to fetch Alberta data:", error);
+    console.error("Failed to load local Alberta data:", error);
   }
 };
  
-const fetchOttawaCameras = (layerGroup, setOttCount) => {
+const fetchOttawaCameras = (layerGroup, setOttawaCount) => {
   try {
   
     const cameraList = Array.isArray(ottawaData) ? ottawaData : (ottawaData.cameras || []);
      
-    setOttCount(cameraList.length);
+    setOttawaCount(cameraList.length);
 
     cameraList
       .filter(
