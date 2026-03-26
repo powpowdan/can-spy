@@ -14,6 +14,9 @@ import londonData from "./londonData.json";
 import californiaData from "./californiaData.json";
 import sydneyData from "./sydneyData.json";
 import chicagoData from "./chicagoData.json";
+import ottawaData from './ottawaData.json';
+// import ontarioData from './ontarioData.json';
+// import albertaData from './albertaData.json';
 
 // Red for Ottawa City
 const redIcon = new L.Icon({
@@ -229,19 +232,13 @@ const fetchAlbertaCameras = async (layerGroup, setAlbertaCount) => {
     console.error("Failed to fetch Alberta data:", error);
   }
 };
-const fetchOttawaCameras = async (layerGroup, setOttawaCount) => {
+ 
+const fetchOttawaCameras = (layerGroup, setOttCount) => {
   try {
-    const proxyUrl = "https://corsproxy.io/?";
-    const targetUrl = "https://traffic.ottawa.ca/map/service/camera";
-
-    const response = await fetch(proxyUrl + encodeURIComponent(targetUrl));
-    const data = await response.json();
-
-    const cameraList = Array.isArray(data) ? data : data.cameras || [];
-    if (cameraList.length === 0) return;
-
-    // UPDATE LEGEND COUNT
-    setOttawaCount(cameraList.length);
+  
+    const cameraList = Array.isArray(ottawaData) ? ottawaData : (ottawaData.cameras || []);
+     
+    setOttCount(cameraList.length);
 
     cameraList
       .filter(
@@ -256,6 +253,9 @@ const fetchOttawaCameras = async (layerGroup, setOttawaCount) => {
           const camId = camera.camera_number;
           const popupId = `ottawa-${camId}`;
           const baseImageUrl = `https://traffic.ottawa.ca/map/camera?id=${camId}`;
+          
+  
+          const proxiedImg = `https://wsrv.nl/?url=${encodeURIComponent(baseImageUrl)}&t=${new Date().getTime()}`;
 
           return `
             <div style="width: 300px;">
@@ -269,7 +269,7 @@ const fetchOttawaCameras = async (layerGroup, setOttawaCount) => {
               </div>
               <img 
                 id="img-${popupId}"
-                src="${baseImageUrl}&t=${new Date().getTime()}" 
+                src="${proxiedImg}" 
                 alt="Live Feed"
                 style="width: 100%; border-radius: 4px; margin-top: 10px; display: block;"
                 onerror="this.onerror=null; this.src='https://placehold.co/300x200?text=City+Camera+Offline';"
@@ -281,7 +281,7 @@ const fetchOttawaCameras = async (layerGroup, setOttawaCount) => {
         layerGroup.addLayer(marker);
       });
   } catch (error) {
-    console.error("Failed to fetch Ottawa camera data:", error);
+    console.error("Failed to process local Ottawa data:", error);
   }
 };
 
@@ -852,15 +852,9 @@ export default function App() {
       <div ref={mapContainer} style={{ height: "100vh", width: "100vw" }} />
 <style>
   {`
-    .count-badge {
-      background-color: #000 !important;
+    .count-badge { 
       color: #00ff00 !important;
-      font-family: 'Courier New', Courier, monospace !important;
-      font-weight: bold !important;
-      padding: 2px 6px !important;
-      border-radius: 4px !important;
-      border: 1px solid #00ff00 !important;
-      box-shadow: 0 0 5px rgba(0, 255, 0, 0.3) !important;
+      font-family: 'Courier New', Courier, monospace !important; 
       margin-left: auto;
     }
   `}
