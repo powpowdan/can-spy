@@ -10,7 +10,7 @@ import quebecMockData from "./quebecMockData.json";
 import torontoData from "./torontoMockData.json";
 import wildlifeData from "./wildlifeData.json";
 import bcMockData from "./bcMockData.json";
-
+import londonData from "./londonData.json";
 
 // Red for Ottawa City
 const redIcon = new L.Icon({
@@ -73,12 +73,26 @@ const orangeIcon = new L.Icon({
 });
 
 const yellowIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+  shadowSize: [41, 41],
+});
+
+// pink for london
+const violetIcon = new L.Icon({
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
 });
 
 // gold for Wildlife
@@ -377,31 +391,29 @@ const fetchQuebecCameras = async (layerGroup) => {
   }
 };
 
- 
-// PROPER DRIVE BC FETCH (Using New URL Structure)
 const fetchBcCameras = (layerGroup, setBcCount) => {
   try {
     const cameras = bcMockData;
     if (!cameras || cameras.length === 0) return;
-    
+
     let validCameras = 0;
-    
-    cameras.forEach(camera => {
+
+    cameras.forEach((camera) => {
       const lat = parseFloat(camera.latitude);
       const lng = parseFloat(camera.longitude);
       const camName = camera.camName || "DriveBC Cam";
       const camId = camera.id;
-      
+
       // BUILD THE NEW URL DIRECTLY USING THE ID
       const imgUrl = `https://www.drivebc.ca/images/${camId}.jpg`;
-      
+
       // Make sure we have a valid ID and coordinates before plotting
       if (!isNaN(lat) && !isNaN(lng) && camId) {
         validCameras++;
         const marker = L.marker([lat, lng], { icon: yellowIcon });
-        
+
         marker.bindPopup(() => {
-          const popupId = `bc-${String(camId).replace(/[^a-zA-Z0-9]/g, '')}`;
+          const popupId = `bc-${String(camId).replace(/[^a-zA-Z0-9]/g, "")}`;
 
           return `
             <div style="width: 300px;">
@@ -426,11 +438,81 @@ const fetchBcCameras = (layerGroup, setBcCount) => {
         layerGroup.addLayer(marker);
       }
     });
-    
+
     setBcCount(validCameras);
-    
   } catch (error) {
     console.error("Error processing BC JSON data:", error);
+  }
+};
+
+const fetchLondonCameras = (layerGroup, setLondonCount) => {
+  try {
+    const cameras = londonData;
+    if (!cameras || !Array.isArray(cameras)) return;
+
+    let validCount = 0;
+
+    cameras.forEach((camera) => {
+      const lat = camera.lat;
+      const lng = camera.lon;
+      const camName = camera.commonName;
+
+      // Find the specific 'videoUrl' inside the properties array
+      const videoProp = camera.additionalProperties?.find(
+        (p) => p.key === "videoUrl",
+      );
+      const videoUrl = videoProp ? videoProp.value : null;
+
+      // Backup image if video fails
+      const imageProp = camera.additionalProperties?.find(
+        (p) => p.key === "imageUrl",
+      );
+      const imageUrl = imageProp ? imageProp.value : null;
+
+      if (lat && lng && (videoUrl || imageUrl)) {
+        validCount++;
+        const marker = L.marker([lat, lng], { icon: violetIcon });
+
+        marker.bindPopup(() => {
+          return `
+            <div style="width: 300px;">
+              <b style="font-size: 14px;">🇬🇧 ${camName}</b><br/>
+               <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px; margin-bottom: 10px;">
+                <span class="pulsing-dot"></span>
+                <span style="color: red; font-weight: bold;">LIVE</span>
+                <span style="font-size: 11px; color: #666; margin-left: auto;">
+                  Sync: <b class="updated-timestamp">${new Date().toLocaleTimeString()}</b>
+                </span>
+              </div>
+              ${
+                videoUrl
+                  ? `
+                <video 
+                  src="${videoUrl}" 
+                  autoplay 
+                  loop 
+                  muted 
+                  playsinline
+                  style="width: 100%; border-radius: 4px; background-color: #000;"
+                  onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+                ></video>
+              `
+                  : ""
+              }
+              <img 
+                src="${imageUrl}" 
+                style="width: 100%; border-radius: 4px; display: ${videoUrl ? "none" : "block"};" 
+                onerror="this.src='https://placehold.co/300x200?text=London+Feed+Offline';"
+              />
+            </div>
+          `;
+        });
+        layerGroup.addLayer(marker);
+      }
+    });
+    setLondonCount(validCount);
+  } catch (error) {
+    console.error("Error processing London data:", error);
   }
 };
 
@@ -448,6 +530,7 @@ export default function App() {
   const [mtoCount, setMtoCount] = useState(0);
   const [albertaCount, setAlbertaCount] = useState(0);
   const [bcCount, setBcCount] = useState(0);
+  const [londonCount, setLondonCount] = useState(0);
   const torontoCount = torontoData.Data ? torontoData.Data.length : 0;
   const quebecCount = quebecMockData.features
     ? quebecMockData.features.length
@@ -462,22 +545,20 @@ export default function App() {
     torontoCount +
     quebecCount +
     bcCount +
+    londonCount +
     wildlifeCount;
 
   useEffect(() => {
     if (!mapInstance.current) {
       // Initialize map
-      mapInstance.current = L.map(mapContainer.current).setView(
-        [45.4215, -75.6972],
-        10,
-      );
+      mapInstance.current = L.map(mapContainer.current).setView([40, -40], 3);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap contributors",
       }).addTo(mapInstance.current);
 
       const clusterOptions = {
         maxClusterRadius: 65,
-        disableClusteringAtZoom: 14,
+        disableClusteringAtZoom: 13,
       };
 
       // Initialize layer groups
@@ -499,7 +580,12 @@ export default function App() {
       const wildlifeLayer = L.markerClusterGroup(clusterOptions).addTo(
         mapInstance.current,
       );
-      const bcCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.current);
+      const bcCameras = L.markerClusterGroup(clusterOptions).addTo(
+        mapInstance.current,
+      );
+      const londonCameras = L.markerClusterGroup(clusterOptions).addTo(
+        mapInstance.current,
+      );
 
       const overlayMaps = {
         "Wildlife Cams": wildlifeLayer,
@@ -510,6 +596,7 @@ export default function App() {
         "British Columbia 511": bcCameras,
         "Québec 511 <span id='qc-layer-label' style='font-size: 11px; color: #d97706; font-style: italic; margin-left: 5px;'>(Loading 600+ live cams...) ⏳</span>":
           quebecCameras,
+        London: londonCameras,
       };
 
       layerControlRef.current = L.control
@@ -524,6 +611,7 @@ export default function App() {
       fetchQuebecCameras(quebecCameras);
       fetchAlbertaCameras(albertaCameras, setAlbertaCount);
       fetchBcCameras(bcCameras, setBcCount);
+      fetchLondonCameras(londonCameras, setLondonCount);
 
       // GLOBAL POPUP WATCHER
       mapInstance.current.on("popupopen", (e) => {
@@ -557,10 +645,9 @@ export default function App() {
 
             // Video Refresh
             if (video) {
-              let rawUrl = video.src;
-              if (rawUrl.includes("&t=")) rawUrl = rawUrl.split("&t=")[0];
-              video.src = `${rawUrl}&t=${Date.now()}`;
-              video.play();
+              // london fix: we reload the existing resource to get the freshest loop.
+              video.load();
+              video.play().catch(() => {});
             }
 
             if (timestampSpan) {
@@ -666,11 +753,22 @@ export default function App() {
                 <span>Alberta 511</span>
                 <span className="count-badge">{albertaCount}</span>
               </div>
-            <div className="legend-item">
-  <span className="dot" style={{ backgroundColor: '#ffea00' }}></span>
-  <span>DriveBC</span>
-  <span className="count-badge">{bcCount}</span>
-</div>
+              <div className="legend-item">
+                <span
+                  className="dot"
+                  style={{ backgroundColor: "#ffea00" }}
+                ></span>
+                <span>DriveBC</span>
+                <span className="count-badge">{bcCount}</span>
+              </div>
+              <div className="legend-item">
+                <span
+                  className="dot"
+                  style={{ backgroundColor: "#ff1493" }}
+                ></span>
+                <span>London (Live Video)</span>
+                <span className="count-badge">{londonCount}</span>
+              </div>
 
               <div className="legend-item">
                 <span

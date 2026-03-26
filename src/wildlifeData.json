@@ -64,13 +64,25 @@
       "youtubeId": "RmmAzrAkKqI"
     }
   },
+  {
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [-147.7164, 64.8378]
+  },
+  "properties": {
+    "name": "Fairbanks Aurora Camera",
+    "location": "Fairbanks, Alaska",
+    "youtubeId": "O52zDyxg5QI"
+  }
+},
     {
       "type": "Feature",
       "geometry": { "type": "Point", "coordinates": [-93.4350, 58.4680] },
       "properties": {
         "name": "Polar Bears - Cape South Churchill",
         "location": "Wapusk National Park, Manitoba",
-        "youtubeId": "lyX7ZxWU64A"
+        "youtubeId": "wj1vuPRJsCQ"
       }
     }
   ]
