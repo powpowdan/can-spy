@@ -100,6 +100,54 @@
     "youtubeId": "Fz6sl9YJZE0"
   }
 },
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [102.5055, 31.0453]
+  },
+  "properties": {
+    "name": "Giant Panda Cam",
+    "location": "Gengda Valley, China",
+    "youtubeId": "BsZEOvS3qTM"
+  }
+},
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [-126.7111, 50.5833]
+  },
+  "properties": {
+    "name": "OrcaLab Main Cams",
+    "location": "Hanson Island, BC, Canada",
+    "youtubeId": "hTOmWcmr2Tc"
+  }
+},
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [-93.7161, 36.3533]
+  },
+  "properties": {
+    "name": "Dutchess the Tiger Cam",
+    "location": "Turpentine Creek, Arkansas",
+    "youtubeId": "5vvWqjygRtI"
+  }
+},
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [-85.3672, 9.8544]
+  },
+  "properties": {
+    "name": "Macaw Feeder High Cam",
+    "location": "Punta Islita, Costa Rica",
+    "youtubeId": "ietpaFoB_Nc"
+  }
+},
     {
       "type": "Feature",
       "geometry": { "type": "Point", "coordinates": [-93.4350, 58.4680] },
