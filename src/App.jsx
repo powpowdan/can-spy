@@ -11,6 +11,7 @@ import torontoData from "./torontoMockData.json";
 import wildlifeData from "./wildlifeData.json";
 import bcMockData from "./bcMockData.json";
 import londonData from "./londonData.json";
+import californiaData from "./californiaData.json";
 
 // Red for Ottawa City
 const redIcon = new L.Icon({
@@ -83,7 +84,7 @@ const yellowIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-// pink for london
+// violet for london
 const violetIcon = new L.Icon({
   iconUrl:
     "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png",
@@ -516,6 +517,61 @@ const fetchLondonCameras = (layerGroup, setLondonCount) => {
   }
 };
 
+const fetchCaliforniaCameras = (layerGroup, setCalCount) => {
+  try {
+    const cameras = californiaData.data || [];
+    if (cameras.length === 0) return;
+
+    let validCount = 0;
+
+    cameras.forEach((item) => {
+      const cctv = item.cctv;
+      const loc = cctv?.location;
+      const imgInfo = cctv?.imageData?.static;
+
+      const lat = parseFloat(loc?.latitude);
+      const lng = parseFloat(loc?.longitude);
+      const camName = loc?.locationName || "California Highway Cam";
+      const imgUrl = imgInfo?.currentImageURL || "";
+
+      if (!isNaN(lat) && !isNaN(lng) && imgUrl && cctv.inService === "true") {
+        validCount++;
+        const marker = L.marker([lat, lng], { icon: orangeIcon });
+
+        marker.bindPopup(() => {
+          const popupId = `cal-${cctv.index}`;
+          return `
+            <div style="width: 300px;">
+              <b style="font-size: 14px;">☀️ ${camName}</b><br/>
+              <i style="font-size: 11px; color: #666;">${loc.nearbyPlace}, ${loc.county} County</i>
+               <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
+                <span class="pulsing-dot"></span>
+                <span style="color: red; font-weight: bold;">LIVE</span>
+                <span style="font-size: 11px; color: #666; margin-left: auto;">
+                  Sync: <b class="updated-timestamp">${new Date().toLocaleTimeString()}</b>
+                </span>
+              </div>
+              <img 
+                id="img-${popupId}"
+                src="${imgUrl}?t=${new Date().getTime()}" 
+                referrerpolicy="no-referrer"
+                style="width: 100%; height: 180px; object-fit: cover; border-radius: 4px; margin-top: 10px; background-color: #222; display: block;"
+                onerror="this.src='https://placehold.co/300x180/222/666?text=Caltrans+Feed+Offline';"
+              />
+              <p style="font-size: 10px; color: #888; margin-top: 5px;">Route: ${loc.route} ${loc.direction}</p>
+            </div>
+          `;
+        });
+        layerGroup.addLayer(marker);
+      }
+    });
+
+    setCalCount(validCount);
+  } catch (error) {
+    console.error("Error processing California data:", error);
+  }
+};
+
 export default function App() {
   const mapContainer = useRef(null);
   const mapInstance = useRef(null);
@@ -531,6 +587,7 @@ export default function App() {
   const [albertaCount, setAlbertaCount] = useState(0);
   const [bcCount, setBcCount] = useState(0);
   const [londonCount, setLondonCount] = useState(0);
+  const [calCount, setCalCount] = useState(0);
   const torontoCount = torontoData.Data ? torontoData.Data.length : 0;
   const quebecCount = quebecMockData.features
     ? quebecMockData.features.length
@@ -546,6 +603,7 @@ export default function App() {
     quebecCount +
     bcCount +
     londonCount +
+    calCount +
     wildlifeCount;
 
   useEffect(() => {
@@ -586,6 +644,10 @@ export default function App() {
       const londonCameras = L.markerClusterGroup(clusterOptions).addTo(
         mapInstance.current,
       );
+      const calCameras = L.markerClusterGroup(clusterOptions).addTo(
+        mapInstance.current,
+      );
+      fetchCaliforniaCameras(calCameras, setCalCount);
 
       const overlayMaps = {
         "Wildlife Cams": wildlifeLayer,
@@ -594,6 +656,7 @@ export default function App() {
         "Ontario 511": mtoCameras,
         "Alberta 511": albertaCameras,
         "British Columbia 511": bcCameras,
+        California: calCameras,
         "Québec 511 <span id='qc-layer-label' style='font-size: 11px; color: #d97706; font-style: italic; margin-left: 5px;'>(Loading 600+ live cams...) ⏳</span>":
           quebecCameras,
         London: londonCameras,
@@ -612,6 +675,7 @@ export default function App() {
       fetchAlbertaCameras(albertaCameras, setAlbertaCount);
       fetchBcCameras(bcCameras, setBcCount);
       fetchLondonCameras(londonCameras, setLondonCount);
+      fetchCaliforniaCameras(calCameras, setCalCount);
 
       // GLOBAL POPUP WATCHER
       mapInstance.current.on("popupopen", (e) => {
@@ -769,7 +833,14 @@ export default function App() {
                 <span>London (Live Video)</span>
                 <span className="count-badge">{londonCount}</span>
               </div>
-
+              <div className="legend-item">
+                <span
+                  className="dot"
+                  style={{ backgroundColor: "#ff8c00" }}
+                ></span>
+                <span>California DOT</span>
+                <span className="count-badge">{calCount}</span>
+              </div>
               <div className="legend-item">
                 <span
                   className="dot"

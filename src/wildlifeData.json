@@ -76,6 +76,18 @@
     "youtubeId": "O52zDyxg5QI"
   }
 },
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [-157.8294, 21.2752]
+  },
+  "properties": {
+    "name": "Waikiki Beach Surfing Cam",
+    "location": "Honolulu, Hawaii",
+    "youtubeId": "iIERsg9nAT0" 
+  }
+},
     {
       "type": "Feature",
       "geometry": { "type": "Point", "coordinates": [-93.4350, 58.4680] },
