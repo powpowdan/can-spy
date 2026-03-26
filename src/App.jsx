@@ -15,7 +15,7 @@ import californiaData from "./californiaData.json";
 import sydneyData from "./sydneyData.json";
 import chicagoData from "./chicagoData.json";
 import ottawaData from './ottawaData.json';
-// import ontarioData from './ontarioData.json';
+import ontarioData from './ontarioData.json';
 // import albertaData from './albertaData.json';
 
 // Red for Ottawa City
@@ -285,44 +285,46 @@ const fetchOttawaCameras = (layerGroup, setOttCount) => {
   }
 };
 
-const fetchMtoCameras = async (layerGroup, setMtoCount) => {
+const fetchMtoCameras = (layerGroup, setMtoCount) => {
   try {
-    const proxy = "https://corsproxy.io/?";
-    const url = encodeURIComponent("https://511on.ca/api/v2/get/cameras");
-
-    const response = await fetch(proxy + url);
-    const cameras = await response.json();
+    // Ontario data is a clean array of objects
+    const cameras = Array.isArray(ontarioData) ? ontarioData : [];
+    
+    if (cameras.length === 0) return;
 
     // UPDATE LEGEND COUNT
     setMtoCount(cameras.length);
 
     cameras.forEach((camera) => {
-      if (camera.Latitude && camera.Longitude && camera.Views?.length > 0) {
+      // MTO uses Capitalized property names (Latitude, Longitude)
+      if (camera.Latitude && camera.Longitude) {
         const marker = L.marker([camera.Latitude, camera.Longitude], {
           icon: blueIcon,
         });
 
         marker.bindPopup(() => {
-          const popupId = `mto-${camera.Id || Math.random().toString(36).substr(2, 9)}`;
-          const baseImageUrl = camera.Views[0].Url;
+          const popupId = `mto-${camera.Id}`;
+          // MTO gives us a direct URL, but we still proxy it for Vercel HTTPS
+          const baseImageUrl = camera.Url || (camera.Views && camera.Views[0]?.Url);
+          const proxiedImg = `https://wsrv.nl/?url=${encodeURIComponent(baseImageUrl)}&t=${Date.now()}`;
 
           return `
             <div style="width: 300px;">
-              <b style="font-size: 14px;">${camera.Location}</b><br/>
+              <b style="font-size: 14px;">${camera.Description || camera.Location || 'Ontario Highway'}</b><br/>
                <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
                 <span class="pulsing-dot"></span>
                 <span style="color: red; font-weight: bold;">LIVE</span>
                 <span style="font-size: 11px; color: #666; margin-left: auto;">
-                  Updated: <b id="time-${popupId}" class="updated-timestamp">${new Date().toLocaleTimeString()}</b>
+                  Updated: <b class="updated-timestamp">${new Date().toLocaleTimeString()}</b>
                 </span>
               </div>
               <img 
                 id="img-${popupId}"
-                src="${baseImageUrl}?t=${new Date().getTime()}" 
-                style="width: 100%; border-radius: 4px; margin-top: 10px;"
+                src="${proxiedImg}" 
+                style="width: 100%; border-radius: 4px; margin-top: 10px; background-color: #222;"
                 onerror="this.src='https://placehold.co/300x200?text=Highway+Cam+Offline';"
               />
-              <p style="font-size: 11px; color: #666; margin-top: 8px;">Roadway: ${camera.Roadway}</p>
+              <p style="font-size: 11px; color: #666; margin-top: 8px;">Roadway: ${camera.Roadway || 'Hwy 400 Series'}</p>
             </div>
           `;
         });
@@ -331,7 +333,7 @@ const fetchMtoCameras = async (layerGroup, setMtoCount) => {
       }
     });
   } catch (error) {
-    console.error("Failed to fetch MTO data:", error);
+    console.error("Failed to load local MTO data:", error);
   }
 };
 
@@ -673,7 +675,7 @@ export default function App() {
   const refreshIntervalIdRef = useRef(null);
   const activePopupRef = useRef(null);
 
-  const [isLegendOpen, setIsLegendOpen] = useState(true);
+  const [isLegendOpen, setIsLegendOpen] = useState(false);
 
   const [ottawaCount, setOttawaCount] = useState(0);
   const [mtoCount, setMtoCount] = useState(0);
@@ -892,7 +894,7 @@ export default function App() {
                   className="dot"
                   style={{ backgroundColor: "#e81123" }}
                 ></span>
-                <span>Ottawa Municipallll</span>
+                <span>Ottawa Municipal</span>
                 <span className="count-badge">{ottawaCount}</span>
               </div>
 
