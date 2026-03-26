@@ -16,7 +16,9 @@ import sydneyData from "./sydneyData.json";
 import chicagoData from "./chicagoData.json";
 import ottawaData from './ottawaData.json';
 import ontarioData from './ontarioData.json';
-import albertaData from './albertaData.json';
+import albertaData from './albertaData.json'; 
+import yorkData from './yorkData.json'; 
+
 
 // Red for Ottawa City
 const redIcon = new L.Icon({
@@ -670,6 +672,58 @@ const fetchIllinoisCameras = (layerGroup, setChiCount) => {
     console.error("Chicago Fetch Error:", error);
   }
 };
+
+const fetchYorkCameras = (layerGroup, setYorkCount) => {
+  try {
+    const features = yorkData.features || [];
+    setYorkCount(features.length);
+
+    features.forEach((feature) => {
+      const props = feature.properties;
+      const geom = feature.geometry;
+
+      // GeoJSON coordinates are [Longitude, Latitude]
+      if (geom && geom.coordinates) {
+        const lng = geom.coordinates[0];
+        const lat = geom.coordinates[1];
+        
+        const marker = L.marker([lat, lng], { icon: redIcon });
+
+        marker.bindPopup(() => {
+          const camId = props.FACILITYID;
+          const popupId = `york-${camId}`;
+          const rawImgUrl = props.photo; // Using the direct 'photo' link from your JSON
+          
+          // Proxying via wsrv.nl to handle any HTTPS/CORS issues on Vercel
+          const proxiedImg = `https://wsrv.nl/?url=${encodeURIComponent(rawImgUrl)}&t=${Date.now()}`;
+
+          return `
+            <div style="width: 300px;">
+              <b style="font-size: 14px;">📍 ${props.cameralocation || 'York Region'}</b><br/>
+              <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
+                <span class="pulsing-dot"></span>
+                <span style="color: red; font-weight: bold;">LIVE</span>
+                <span style="font-size: 11px; color: #666; margin-left: auto;">
+                  Updated: <b class="updated-timestamp">${new Date().toLocaleTimeString()}</b>
+                </span>
+              </div>
+              <img 
+                id="img-${popupId}"
+                src="${proxiedImg}" 
+                style="width: 100%; border-radius: 4px; margin-top: 10px; background-color: #222;"
+                onerror="this.src='https://placehold.co/300x200?text=York+Feed+Offline';"
+              />
+              <p style="font-size: 10px; color: #888; margin-top: 5px;">Intersection ID: ${camId}</p>
+            </div>
+          `;
+        });
+        layerGroup.addLayer(marker);
+      }
+    });
+  } catch (error) {
+    console.error("York Data Error:", error);
+  }
+};
 export default function App() {
   const mapContainer = useRef(null);
   const mapInstance = useRef(null);
@@ -679,6 +733,7 @@ export default function App() {
 
   const [isLegendOpen, setIsLegendOpen] = useState(false);
 
+  const [yorkCount, setYorkCount] = useState(0);
   const [ottawaCount, setOttawaCount] = useState(0);
   const [mtoCount, setMtoCount] = useState(0);
   const [albertaCount, setAlbertaCount] = useState(0);
@@ -705,6 +760,7 @@ export default function App() {
     calCount +
     sydCount +
     chiCount +
+    yorkCount +
     wildlifeCount;
 
   useEffect(() => {
@@ -754,11 +810,13 @@ export default function App() {
       const chicagoCameras = L.markerClusterGroup(clusterOptions).addTo(
         mapInstance.current,
       );
+      const yorkCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.current);
 
       const overlayMaps = {
         "Wildlife Cams": wildlifeLayer,
         "City of Ottawa": cityCameras,
         "City of Toronto": torontoCameras,
+        "North York": yorkCameras,
         "Ontario 511": mtoCameras,
         "Alberta 511": albertaCameras,
         "British Columbia 511": bcCameras,
@@ -768,6 +826,7 @@ export default function App() {
         London: londonCameras,
         Sydney: sydLayer,
         "Illinois": chicagoCameras,
+        
       };
 
       layerControlRef.current = L.control
@@ -786,6 +845,8 @@ export default function App() {
       fetchCaliforniaCameras(calCameras, setCalCount);
       fetchSydneyCameras(sydLayer, setSydCount);
       fetchIllinoisCameras(chicagoCameras, setChiCount);
+      fetchYorkCameras(yorkCameras, setYorkCount);
+
 
       // GLOBAL POPUP WATCHER
       mapInstance.current.on("popupopen", (e) => {
@@ -976,11 +1037,16 @@ export default function App() {
               <span className="count-badge">{chiCount}</span>
             </div>
             <div className="legend-item">
+  <span className="dot" style={{ backgroundColor: "#0078d7" }}></span>
+  <span>York Region</span>
+  <span className="count-badge">{yorkCount}</span>
+</div>
+            <div className="legend-item">
               <span
                   className="dot"
                   style={{ backgroundColor: "#f0f70d" }}
                 ></span>
-                <span>Wildlife & Nature</span>
+                <span>Wildlife & Nature (Live)</span>
                 <span className="count-badge">{wildlifeCount}</span>
               </div>
 
