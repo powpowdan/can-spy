@@ -13,6 +13,7 @@ import bcMockData from "./bcMockData.json";
 import londonData from "./londonData.json";
 import californiaData from "./californiaData.json";
 import sydneyData from "./sydneyData.json";
+import chicagoData from "./chicagoData.json";
 
 // Red for Ottawa City
 const redIcon = new L.Icon({
@@ -615,6 +616,56 @@ const fetchSydneyCameras = (layerGroup, setSydCount) => {
     console.error("Sydney Fetch Error:", error);
   }
 };
+
+const fetchIllinoisCameras = (layerGroup, setChiCount) => {
+  try {
+    const cameras = chicagoData.features || [];
+    setChiCount(cameras.length);
+
+    cameras.forEach((camera) => {
+      const attrs = camera.attributes;
+      const geo = camera.geometry; 
+      const lat = geo.y;
+      const lng = geo.x;
+      const camName = attrs.CameraLocation || "Chicago Camera";
+      const rawImgUrl = attrs.SnapShot;
+      
+      // THE FIX: Use wsrv.nl. It is a high-performance image proxy 
+      // that is much better at bypassing 403 hotlink protection.
+      const proxiedUrl = `https://wsrv.nl/?url=${encodeURIComponent(rawImgUrl)}&default=https://placehold.co/300x180/222/666?text=Feed+Offline`;
+
+      if (lat && lng && rawImgUrl) {
+        const marker = L.marker([lat, lng]);
+
+        marker.bindPopup(() => {
+          const popupId = `chi-${attrs.OBJECTID}`;
+          return `
+            <div style="width: 300px; color: white;">
+              <b style="font-size: 14px;">🏙️ ${camName}</b><br/>
+              <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
+                <span class="pulsing-dot"></span>
+                <span style="color: #ff3b30; font-weight: bold;">LIVE</span>
+                <span style="font-size: 11px; color: #aaa; margin-left: auto;">
+                  Sync: <b class="updated-timestamp">${new Date().toLocaleTimeString()}</b>
+                </span>
+              </div>
+              <img 
+                id="img-${popupId}"
+                src="${proxiedUrl}&t=${Date.now()}" 
+                referrerpolicy="no-referrer"
+                style="width: 100%; height: 180px; object-fit: cover; border-radius: 4px; margin-top: 10px; background-color: #222; display: block;"
+              />
+              <p style="font-size: 10px; color: #888; margin-top: 5px;">Direction: ${attrs.CameraDirection} | Updated: ${attrs.AgeInMinutes}m ago</p>
+            </div>
+          `;
+        });
+        layerGroup.addLayer(marker);
+      }
+    });
+  } catch (error) {
+    console.error("Chicago Fetch Error:", error);
+  }
+};
 export default function App() {
   const mapContainer = useRef(null);
   const mapInstance = useRef(null);
@@ -631,6 +682,7 @@ export default function App() {
   const [londonCount, setLondonCount] = useState(0);
   const [calCount, setCalCount] = useState(0);
   const [sydCount, setSydCount] = useState(0);
+  const [chiCount, setChiCount] = useState(0);
   const torontoCount = torontoData.Data ? torontoData.Data.length : 0;
   const quebecCount = quebecMockData.features
     ? quebecMockData.features.length
@@ -648,6 +700,7 @@ export default function App() {
     londonCount +
     calCount +
     sydCount +
+    chiCount +
     wildlifeCount;
 
   useEffect(() => {
@@ -694,6 +747,9 @@ export default function App() {
       const sydLayer = L.markerClusterGroup(clusterOptions).addTo(
         mapInstance.current,
       );
+      const chicagoCameras = L.markerClusterGroup(clusterOptions).addTo(
+        mapInstance.current,
+      );
 
       const overlayMaps = {
         "Wildlife Cams": wildlifeLayer,
@@ -707,6 +763,7 @@ export default function App() {
           quebecCameras,
         London: londonCameras,
         Sydney: sydLayer,
+        "Illinois": chicagoCameras,
       };
 
       layerControlRef.current = L.control
@@ -724,6 +781,7 @@ export default function App() {
       fetchLondonCameras(londonCameras, setLondonCount);
       fetchCaliforniaCameras(calCameras, setCalCount);
       fetchSydneyCameras(sydLayer, setSydCount);
+      fetchIllinoisCameras(chicagoCameras, setChiCount);
 
       // GLOBAL POPUP WATCHER
       mapInstance.current.on("popupopen", (e) => {
@@ -792,7 +850,21 @@ export default function App() {
   return (
     <div style={{ position: "relative" }}>
       <div ref={mapContainer} style={{ height: "100vh", width: "100vw" }} />
-
+<style>
+  {`
+    .count-badge {
+      background-color: #000 !important;
+      color: #00ff00 !important;
+      font-family: 'Courier New', Courier, monospace !important;
+      font-weight: bold !important;
+      padding: 2px 6px !important;
+      border-radius: 4px !important;
+      border: 1px solid #00ff00 !important;
+      box-shadow: 0 0 5px rgba(0, 255, 0, 0.3) !important;
+      margin-left: auto;
+    }
+  `}
+</style>
       <div
         style={{
           position: "absolute",
@@ -899,6 +971,14 @@ export default function App() {
               </div>
               <div className="legend-item">
                 <span
+                className="dot"
+                style={{ backgroundColor: "#ffea00" }}
+              ></span>
+              <span>Illinois</span>
+              <span className="count-badge">{chiCount}</span>
+            </div>
+            <div className="legend-item">
+              <span
                   className="dot"
                   style={{ backgroundColor: "#f0f70d" }}
                 ></span>
