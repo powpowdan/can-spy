@@ -88,6 +88,18 @@
     "youtubeId": "iIERsg9nAT0" 
   }
 },
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [-82.593, 28.799] 
+  },
+  "properties": {
+    "name": "Underwater Manatee Cam",
+    "location": "Homosassa Springs, FL",
+    "youtubeId": "Fz6sl9YJZE0"
+  }
+},
     {
       "type": "Feature",
       "geometry": { "type": "Point", "coordinates": [-93.4350, 58.4680] },

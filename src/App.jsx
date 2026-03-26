@@ -12,6 +12,7 @@ import wildlifeData from "./wildlifeData.json";
 import bcMockData from "./bcMockData.json";
 import londonData from "./londonData.json";
 import californiaData from "./californiaData.json";
+import sydneyData from "./sydneyData.json";
 
 // Red for Ottawa City
 const redIcon = new L.Icon({
@@ -408,7 +409,7 @@ const fetchBcCameras = (layerGroup, setBcCount) => {
       // BUILD THE NEW URL DIRECTLY USING THE ID
       const imgUrl = `https://www.drivebc.ca/images/${camId}.jpg`;
 
-      // Make sure we have a valid ID and coordinates before plotting
+    
       if (!isNaN(lat) && !isNaN(lng) && camId) {
         validCameras++;
         const marker = L.marker([lat, lng], { icon: yellowIcon });
@@ -571,7 +572,49 @@ const fetchCaliforniaCameras = (layerGroup, setCalCount) => {
     console.error("Error processing California data:", error);
   }
 };
+const fetchSydneyCameras = (layerGroup, setSydCount) => {
+  try { 
+    const features = sydneyData.features || [];
+    setSydCount(features.length);
 
+    features.forEach((f) => { 
+      const lat = f.geometry.coordinates[1];
+      const lng = f.geometry.coordinates[0];
+
+      const props = f.properties;
+
+      if (!isNaN(lat) && !isNaN(lng)) {
+        const marker = L.marker([lat, lng], { icon: blueIcon });
+
+        marker.bindPopup(() => {
+          const popupId = `syd-${f.id}`;
+          return `
+            <div style="width: 300px;">
+              <b style="font-size: 14px;">🇦🇺 ${props.title}</b><br/>
+              <i style="font-size: 11px; color: #666;">${props.view}</i>
+               <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
+                <span class="pulsing-dot"></span>
+                <span style="color: red; font-weight: bold;">LIVE</span>
+                <span style="font-size: 11px; color: #666; margin-left: auto;">
+                  Sync: <b class="updated-timestamp">${new Date().toLocaleTimeString()}</b>
+                </span>
+              </div>
+              <img 
+                id="img-${popupId}"
+                src="${props.href}?t=${Date.now()}" 
+                style="width: 100%; height: 180px; object-fit: cover; border-radius: 4px; margin-top: 10px; background-color: #222; display: block;"
+                onerror="this.src='https://placehold.co/300x180/222/666?text=Sydney+Offline';"
+              />
+            </div>
+          `;
+        });
+        layerGroup.addLayer(marker);
+      }
+    });
+  } catch (error) {
+    console.error("Sydney Fetch Error:", error);
+  }
+};
 export default function App() {
   const mapContainer = useRef(null);
   const mapInstance = useRef(null);
@@ -581,13 +624,13 @@ export default function App() {
 
   const [isLegendOpen, setIsLegendOpen] = useState(true);
 
-  // Legend State Totals
   const [ottawaCount, setOttawaCount] = useState(0);
   const [mtoCount, setMtoCount] = useState(0);
   const [albertaCount, setAlbertaCount] = useState(0);
   const [bcCount, setBcCount] = useState(0);
   const [londonCount, setLondonCount] = useState(0);
   const [calCount, setCalCount] = useState(0);
+  const [sydCount, setSydCount] = useState(0);
   const torontoCount = torontoData.Data ? torontoData.Data.length : 0;
   const quebecCount = quebecMockData.features
     ? quebecMockData.features.length
@@ -604,6 +647,7 @@ export default function App() {
     bcCount +
     londonCount +
     calCount +
+    sydCount +
     wildlifeCount;
 
   useEffect(() => {
@@ -647,7 +691,9 @@ export default function App() {
       const calCameras = L.markerClusterGroup(clusterOptions).addTo(
         mapInstance.current,
       );
-      fetchCaliforniaCameras(calCameras, setCalCount);
+      const sydLayer = L.markerClusterGroup(clusterOptions).addTo(
+        mapInstance.current,
+      );
 
       const overlayMaps = {
         "Wildlife Cams": wildlifeLayer,
@@ -660,6 +706,7 @@ export default function App() {
         "Québec 511 <span id='qc-layer-label' style='font-size: 11px; color: #d97706; font-style: italic; margin-left: 5px;'>(Loading 600+ live cams...) ⏳</span>":
           quebecCameras,
         London: londonCameras,
+        Sydney: sydLayer,
       };
 
       layerControlRef.current = L.control
@@ -676,6 +723,7 @@ export default function App() {
       fetchBcCameras(bcCameras, setBcCount);
       fetchLondonCameras(londonCameras, setLondonCount);
       fetchCaliforniaCameras(calCameras, setCalCount);
+      fetchSydneyCameras(sydLayer, setSydCount);
 
       // GLOBAL POPUP WATCHER
       mapInstance.current.on("popupopen", (e) => {
@@ -697,7 +745,7 @@ export default function App() {
               return;
             }
 
-            // Image Refresh (Strips old timestamps safely for both format types)
+            // Image Refresh 
             if (img) {
               let rawUrl = img.src;
               if (rawUrl.includes("?t=")) rawUrl = rawUrl.split("?t=")[0];
@@ -838,8 +886,16 @@ export default function App() {
                   className="dot"
                   style={{ backgroundColor: "#ff8c00" }}
                 ></span>
-                <span>California DOT</span>
+                <span>California</span>
                 <span className="count-badge">{calCount}</span>
+              </div>
+              <div className="legend-item">
+                <span
+                  className="dot"
+                  style={{ backgroundColor: "#ff8c00" }}
+                ></span>
+                <span>Sydney</span>
+                <span className="count-badge">{sydCount}</span>
               </div>
               <div className="legend-item">
                 <span
