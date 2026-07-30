@@ -1,22 +1,68 @@
-<<<<<<< HEAD
-# React + Vite
+# CanSpy
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> Watch the world move — 10,000+ live cameras (mostly traffic, some wildlife, all public) on one map
 
-Currently, two official plugins are available:
+[![global-cam.vercel.app](https://img.shields.io/badge/live-global--cam.vercel.app-00ff00)](https://global-cam.vercel.app/)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+![CanSpy](src/assets/Capture.JPG)
 
-## React Compiler
+## What is this?
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+Started as a way to watch Ottawa traffic. Now it's a global map of public traffic cameras from cities across Canada, the US, the UK, and Australia — plus a handful of wildlife/nature cams for good measure. Click any pin and watch the feed.
 
-Note: This will impact Vite dev & build performances.
+## Features
 
-## Expanding the ESLint configuration
+- 🌍 **Global interactive map** — Leaflet + OpenStreetMap tiles
+- 📍 **10,000+ camera pins** across 12+ regions
+- 🎥 **Live feeds** — image, video (MP4), and YouTube streams
+- 🔵 **Auto-refresh** — every 15s when a popup is open
+- 🗂️ **Layer toggles** — show/hide regions on the fly
+- ✅ **Marker clustering** — so you can actually see the map
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-=======
-# can-spy
->>>>>>> 453d1b96f852ab923d8cd92d74fadde0e1068066
+## Regions
+
+| Region | Feed type |
+|--------|-----------|
+| Ottawa, ON | Image |
+| Ontario MTO (511) | Image |
+| Toronto, ON | Image |
+| York Region, ON | Image |
+| Quebec (511) | Video (MP4) |
+| Alberta (511) | Image |
+| British Columbia (DriveBC) | Image |
+| London, UK (TfL) | Video (MP4) |
+| California (Caltrans) | Image |
+| Sydney, NSW | Image |
+| Chicago / Illinois | Image |
+| Wildlife cams (worldwide) | YouTube |
+
+## Tech Stack
+
+**React 19** · **Vite 8** · **Leaflet** · **leaflet.markercluster** · **Vercel**
+
+## Getting Started
+
+```bash
+npm install
+npm run dev     # local dev at localhost:5173
+npm run build   # production build to dist/
+npm run lint    # eslint
+npm run preview # preview production build
+```
+
+## How It Works
+
+Camera data is pre-fetched into static JSON files — no live API calls at runtime. When you click a marker, the popup pulls the latest frame from the public camera feed. Some regions need an image proxy (`wsrv.nl`) to bypass hotlink protection. All feeds in an open popup refresh every 15 seconds.
+
+## Data Sources
+
+City of Ottawa, Ontario 511, City of Toronto Open Data, Quebec 511, Alberta 511, DriveBC, Transport for London (TfL JamCams), Caltrans, Transport for NSW, Chicago DOT, York Region, and various YouTube live streams.
+
+## Scripts
+
+| Command | What it does |
+|---------|-------------|
+| `npm run dev` | Start dev server |
+| `npm run build` | Production build |
+| `npm run lint` | Run ESLint |
+| `npm run preview` | Preview production build |
