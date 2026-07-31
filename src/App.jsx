@@ -1,1084 +1,637 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import "leaflet.markercluster";
 
-import quebecMockData from "./quebecMockData.json";
-import torontoData from "./torontoMockData.json";
-import wildlifeData from "./wildlifeData.json";
-import bcMockData from "./bcMockData.json";
-import londonData from "./londonData.json";
-import californiaData from "./californiaData.json";
-import sydneyData from "./sydneyData.json";
-import chicagoData from "./chicagoData.json";
-import ottawaData from './ottawaData.json';
-import ontarioData from './ontarioData.json';
-import albertaData from './albertaData.json'; 
-import yorkData from './yorkData.json'; 
+import {
+  cameraRecords,
+  cameraSourceCatalog,
+  feedTypeLabel,
+  groupedSources,
+  matchesCategory,
+  sourceCounts,
+  totalCameraCount,
+} from "./cameraModel";
 
+const DEFAULT_MAP_VIEW = [24, -20];
+const DEFAULT_MAP_ZOOM = 2;
 
-// Red for Ottawa City
-const redIcon = new L.Icon({
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
+const formatCount = (value) => new Intl.NumberFormat("en-US").format(value);
 
-// Blue for MTO/Highway
-const blueIcon = new L.Icon({
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
+const addCacheBuster = (url, tick) => {
+  if (!url || url.includes("youtube.com/embed")) return url;
+  return `${url}${url.includes("?") ? "&" : "?"}t=${tick}`;
+};
 
-// Green for Quebec 511
-const greenIcon = new L.Icon({
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
+function FeedPreview({ camera, refreshTick, hasError, onError, onFallback, usingFallback }) {
+  const previewUrl = usingFallback ? camera.previewFallbackUrl : camera.previewUrl;
 
-// Violet for Toronto
-const purpleIcon = new L.Icon({
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png",
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
-// Orange for Alberta 511
-const orangeIcon = new L.Icon({
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png",
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
-const yellowIcon = new L.Icon({
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png",
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
-// violet for london
-const violetIcon = new L.Icon({
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png",
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
-// gold for Wildlife
-const wildlifeIcon = new L.Icon({
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png",
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
-const fetchWildlifeCameras = (layerGroup) => {
-  wildlifeData.features.forEach((feature) => {
-    const [lng, lat] = feature.geometry.coordinates;
-    const { name, location, youtubeId } = feature.properties;
-
-    const marker = L.marker([lat, lng], { icon: wildlifeIcon });
-
-    const liveUrl = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&live=1&modestbranding=1&rel=0&t=${new Date().getTime()}`;
-
-    const popupContent = `
-      <div style="width: 320px;">
-        <b style="font-size: 14px;">🌿 ${name}</b><br/>
-        <i style="font-size: 11px; color: #666;">${location}</i>
-        <div style="margin-top: 10px; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 4px; background: #000;">
-          <iframe 
-            src="${liveUrl}" 
-            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
-            frameborder="0" 
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-            allowfullscreen>
-          </iframe>
-        </div>
-        <div style="font-size: 10px; color: #999; margin-top: 8px; text-align: center;">
-          Note: If video appears delayed, click the "LIVE" button in the player.
-        </div>
+  if (hasError || !previewUrl) {
+    return (
+      <div className="feed-placeholder" role="img" aria-label="Camera feed unavailable">
+        <span className="feed-placeholder-icon">!</span>
+        <strong>Feed unavailable</strong>
+        <span>Camera details are still available.</span>
       </div>
-    `;
+    );
+  }
 
-    marker.bindPopup(popupContent, { maxWidth: 350 });
-    layerGroup.addLayer(marker);
-  });
-};
+  if (camera.feedType === "youtube") {
+    return (
+      <iframe
+        className="feed-media"
+        src={camera.previewUrl}
+        title={`${camera.name} live stream`}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+    );
+  }
 
-const fetchTorontoCameras = (layerGroup) => {
-  const cameras = torontoData.Data || [];
+  if (camera.feedType === "live-video" && !usingFallback) {
+    return (
+      <video
+        key={`${camera.id}-${refreshTick}`}
+        className="feed-media"
+        src={addCacheBuster(previewUrl, refreshTick)}
+        autoPlay
+        loop
+        muted
+        playsInline
+        onError={() => (camera.previewFallbackUrl ? onFallback() : onError())}
+      />
+    );
+  }
 
-  cameras.forEach((cam) => {
-    const lat = parseFloat(cam.Latitude);
-    const lng = parseFloat(cam.Longitude);
-    const camNumber = cam.Number;
-    const camName = cam.Name;
+  return (
+    <img
+      className="feed-media"
+      src={addCacheBuster(previewUrl, refreshTick)}
+      alt={`${camera.name} camera feed`}
+      onError={onError}
+    />
+  );
+}
 
-    if (!isNaN(lat) && !isNaN(lng) && camNumber) {
-      const marker = L.marker([lat, lng], { icon: purpleIcon });
+function CameraDetail({ camera, hasError, refreshTick, usingFallback, onClose, onFeedError, onFeedFallback }) {
+  const detailRef = useRef(null);
+  const statusLabel = hasError
+    ? "Feed unavailable"
+      : usingFallback
+      ? "Current frame"
+      : feedTypeLabel(camera.feedType);
 
-      marker.bindPopup(() => {
-        const popupId = `popup-${camNumber}`;
-        return `
-          <div style="width: 300px;">
-            <b style="font-size: 14px;">${camName}</b><br/>
-             <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px; margin-bottom: 10px;">
-              <span class="pulsing-dot"></span>
-              <span style="color: red; font-weight: bold;">LIVE</span>
-              <span style="font-size: 11px; color: #666; margin-left: auto;">
-                Updated: <b id="time-${popupId}" class="updated-timestamp">${new Date().toLocaleTimeString()}</b>
-              </span>
+  useEffect(() => {
+    detailRef.current?.focus();
+  }, [camera.id]);
+
+  return (
+    <aside
+      ref={detailRef}
+      className="camera-detail"
+      role="dialog"
+      tabIndex="-1"
+      aria-labelledby={`camera-title-${camera.id}`}
+    >
+      <div className="detail-header">
+        <div>
+          <p className="detail-kicker">Selected feed</p>
+          <h2 id={`camera-title-${camera.id}`}>{camera.name}</h2>
+        </div>
+        <button className="icon-button" type="button" onClick={onClose} aria-label="Close camera details">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <div className="detail-source">
+        <span className="source-swatch" style={{ backgroundColor: camera.accent }} />
+        <span>{camera.sourceLabel}</span>
+      </div>
+
+      <div className="detail-feed">
+        <FeedPreview
+          camera={camera}
+          refreshTick={refreshTick}
+          hasError={hasError}
+          onError={onFeedError}
+          onFallback={onFeedFallback}
+          usingFallback={usingFallback}
+        />
+      </div>
+
+      <div className={`feed-status ${hasError ? "is-offline" : ""}`}>
+        <span className="status-dot" aria-hidden="true" />
+        <strong>{statusLabel}</strong>
+        {!hasError && camera.feedType !== "youtube" && (
+          <span className="feed-status-time">
+            {camera.lastUpdated || `Refreshed ${new Date(refreshTick).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`}
+          </span>
+        )}
+      </div>
+
+      {camera.metadata?.length > 0 && (
+        <dl className="detail-metadata">
+          {camera.metadata.map(({ label, value }) => (
+            <div key={`${camera.id}-${label}`}>
+              <dt>{label}</dt>
+              <dd>{value}</dd>
             </div>
-            <img 
-              id="img-${popupId}"
-              src="https://opendata.toronto.ca/transportation/tmc/rescucameraimages/CameraImages/loc${camNumber}.jpg?t=${new Date().getTime()}" 
-              style="width: 100%; border-radius: 4px;"
-              onerror="this.src='https://placehold.co/300x200?text=Toronto+Feed+Offline';"
-            />
+          ))}
+        </dl>
+      )}
+
+      <div className="detail-footer">
+        <span>Public source</span>
+        <span className="detail-coordinates">
+          {camera.lat.toFixed(3)}, {camera.lng.toFixed(3)}
+        </span>
+      </div>
+    </aside>
+  );
+}
+
+function CategoryFilters({ activeCategory, onChange }) {
+  const categories = [
+    ["all", "All feeds"],
+    ["traffic", "Traffic"],
+    ["highway", "Highway"],
+    ["nature", "Nature"],
+    ["video", "Video"],
+  ];
+
+  return (
+    <div className="filter-group" aria-label="Feed category filters">
+      {categories.map(([value, label]) => (
+        <button
+          className={`filter-chip ${activeCategory === value ? "is-active" : ""}`}
+          key={value}
+          type="button"
+          aria-pressed={activeCategory === value}
+          onClick={() => onChange(value)}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ExplorerPanel({
+  activeCategory,
+  activeSources,
+  isOpen,
+  matchingCameras,
+  isMapReady,
+  onCategoryChange,
+  onClose,
+  onSelectCamera,
+  onSearchChange,
+  onShowMore,
+  onSourceToggle,
+  resultLimit,
+  searchQuery,
+  visibleCameraCount,
+}) {
+  const hasQuery = searchQuery.trim().length > 0;
+
+  return (
+    <aside className={`explorer-panel ${isOpen ? "is-open" : ""}`} aria-label="Explore cameras">
+      <div className="panel-heading">
+        <div>
+          <p className="panel-kicker">Explore the network</p>
+          <h1>Find a camera</h1>
+        </div>
+        <button className="panel-close" type="button" onClick={onClose} aria-label="Close explore panel">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <label className="panel-search">
+        <span className="search-icon" aria-hidden="true" />
+        <span className="sr-only">Search cameras</span>
+        <input
+          value={searchQuery}
+          onChange={(event) => onSearchChange(event.target.value)}
+          placeholder="Search city, road, or camera"
+          type="search"
+        />
+        {searchQuery && (
+          <button className="search-clear" type="button" onClick={() => onSearchChange("")} aria-label="Clear search">
+            &times;
+          </button>
+        )}
+      </label>
+
+      <div className="panel-scroll">
+        <div className="panel-summary" aria-live="polite">
+          <div>
+            <strong>{formatCount(visibleCameraCount)}</strong>
+            <span>feeds visible</span>
           </div>
-        `;
-      });
-      layerGroup.addLayer(marker);
-    }
-  });
-};
- const fetchAlbertaCameras = (layerGroup, setAlbertaCount) => {
-  try {
-    // Alberta 511 returns a clean array
-    const cameras = Array.isArray(albertaData) ? albertaData : [];
-    
-    if (cameras.length === 0) return;
+          <span className={`summary-status ${isMapReady ? "" : "is-loading"}`}>
+            <span className="status-dot" />
+            {isMapReady ? "Sources loaded" : "Loading map"}
+          </span>
+        </div>
 
-    // UPDATE LEGEND COUNT
-    setAlbertaCount(cameras.length);
+        <CategoryFilters activeCategory={activeCategory} onChange={onCategoryChange} />
 
-    cameras.forEach((camera) => {
-      // Check for Latitude and Longitude (Capitalized)
-      if (camera.Latitude && camera.Longitude) {
-        const marker = L.marker([camera.Latitude, camera.Longitude], {
-          icon: yellowIcon, // Use yellow for Alberta to distinguish from Ontario
-        });
-
-        marker.bindPopup(() => {
-          const popupId = `alb-${camera.Id}`;
-          // Get the URL from the first view available
-          const baseImageUrl = camera.Url || (camera.Views && camera.Views[0]?.Url);
-          const proxiedImg = `https://wsrv.nl/?url=${encodeURIComponent(baseImageUrl)}&t=${Date.now()}`;
-
-          return `
-            <div style="width: 300px;">
-              <b style="font-size: 14px;">🏔️ ${camera.Description || 'Alberta Highway'}</b><br/>
-               <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
-                <span class="pulsing-dot"></span>
-                <span style="color: red; font-weight: bold;">LIVE</span>
-                <span style="font-size: 11px; color: #666; margin-left: auto;">
-                  Updated: <b class="updated-timestamp">${new Date().toLocaleTimeString()}</b>
-                </span>
-              </div>
-              <img 
-                id="img-${popupId}"
-                src="${proxiedImg}" 
-                style="width: 100%; border-radius: 4px; margin-top: 10px; background-color: #222;"
-                onerror="this.src='https://placehold.co/300x200?text=Alberta+Cam+Offline';"
-              />
-              <p style="font-size: 11px; color: #666; margin-top: 8px;">Roadway: ${camera.Roadway || 'AB Highway'}</p>
+        {hasQuery ? (
+          <section className="results-section" aria-label="Search results">
+            <div className="section-heading">
+              <span>Matching cameras</span>
+              <span>{formatCount(matchingCameras.length)}</span>
             </div>
-          `;
-        });
-
-        layerGroup.addLayer(marker);
-      }
-    });
-  } catch (error) {
-    console.error("Failed to load local Alberta data:", error);
-  }
-};
- 
-const fetchOttawaCameras = (layerGroup, setOttawaCount) => {
-  try {
-  
-    const cameraList = Array.isArray(ottawaData) ? ottawaData : (ottawaData.cameras || []);
-     
-    setOttawaCount(cameraList.length);
-
-    cameraList
-      .filter(
-        (camera) => camera.type === "camera" || camera.camera_number < 2000,
-      )
-      .forEach((camera) => {
-        const marker = L.marker([camera.latitude, camera.longitude], {
-          icon: redIcon,
-        });
-
-        marker.bindPopup(() => {
-          const camId = camera.camera_number;
-          const popupId = `ottawa-${camId}`;
-          const baseImageUrl = `https://traffic.ottawa.ca/map/camera?id=${camId}`;
-          
-  
-          const proxiedImg = `https://wsrv.nl/?url=${encodeURIComponent(baseImageUrl)}&t=${new Date().getTime()}`;
-
-          return `
-            <div style="width: 300px;">
-              <b style="font-size: 14px;">${camera.description || camera.name}</b><br/>
-              <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
-                <span class="pulsing-dot"></span>
-                <span style="color: red; font-weight: bold;">LIVE</span>
-                <span style="font-size: 11px; color: #666; margin-left: auto;">
-                  Updated: <b id="time-${popupId}" class="updated-timestamp">${new Date().toLocaleTimeString()}</b>
-                </span>
+            {matchingCameras.length > 0 ? (
+              <div className="camera-results">
+                {matchingCameras.slice(0, resultLimit).map((camera) => (
+                  <button
+                    className="camera-result"
+                    key={camera.id}
+                    type="button"
+                    onClick={() => onSelectCamera(camera)}
+                  >
+                    <span className="result-marker" style={{ backgroundColor: camera.accent }} />
+                    <span className="result-copy">
+                      <strong>{camera.name}</strong>
+                      <span>{camera.sourceLabel}</span>
+                    </span>
+                    <span className="result-arrow" aria-hidden="true">&rarr;</span>
+                  </button>
+                ))}
+                {matchingCameras.length > resultLimit && (
+                  <button className="load-more" type="button" onClick={onShowMore}>
+                    Show more results
+                    <span>{formatCount(matchingCameras.length - resultLimit)} remaining</span>
+                  </button>
+                )}
               </div>
-              <img 
-                id="img-${popupId}"
-                src="${proxiedImg}" 
-                alt="Live Feed"
-                style="width: 100%; border-radius: 4px; margin-top: 10px; display: block;"
-                onerror="this.onerror=null; this.src='https://placehold.co/300x200?text=City+Camera+Offline';"
-              />
-            </div>
-          `;
-        });
-
-        layerGroup.addLayer(marker);
-      });
-  } catch (error) {
-    console.error("Failed to process local Ottawa data:", error);
-  }
-};
-
-const fetchMtoCameras = (layerGroup, setMtoCount) => {
-  try {
-    // Ontario data is a clean array of objects
-    const cameras = Array.isArray(ontarioData) ? ontarioData : [];
-    
-    if (cameras.length === 0) return;
-
-    // UPDATE LEGEND COUNT
-    setMtoCount(cameras.length);
-
-    cameras.forEach((camera) => {
-      // MTO uses Capitalized property names (Latitude, Longitude)
-      if (camera.Latitude && camera.Longitude) {
-        const marker = L.marker([camera.Latitude, camera.Longitude], {
-          icon: blueIcon,
-        });
-
-        marker.bindPopup(() => {
-          const popupId = `mto-${camera.Id}`;
-          // MTO gives us a direct URL, but we still proxy it for Vercel HTTPS
-          const baseImageUrl = camera.Url || (camera.Views && camera.Views[0]?.Url);
-          const proxiedImg = `https://wsrv.nl/?url=${encodeURIComponent(baseImageUrl)}&t=${Date.now()}`;
-
-          return `
-            <div style="width: 300px;">
-              <b style="font-size: 14px;">${camera.Description || camera.Location || 'Ontario Highway'}</b><br/>
-               <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
-                <span class="pulsing-dot"></span>
-                <span style="color: red; font-weight: bold;">LIVE</span>
-                <span style="font-size: 11px; color: #666; margin-left: auto;">
-                  Updated: <b class="updated-timestamp">${new Date().toLocaleTimeString()}</b>
-                </span>
+            ) : (
+              <div className="empty-state">
+                <strong>No cameras found</strong>
+                <span>Try a city, road, or region name.</span>
               </div>
-              <img 
-                id="img-${popupId}"
-                src="${proxiedImg}" 
-                style="width: 100%; border-radius: 4px; margin-top: 10px; background-color: #222;"
-                onerror="this.src='https://placehold.co/300x200?text=Highway+Cam+Offline';"
-              />
-              <p style="font-size: 11px; color: #666; margin-top: 8px;">Roadway: ${camera.Roadway || 'Hwy 400 Series'}</p>
+            )}
+          </section>
+        ) : (
+          <div className="search-prompt">
+            <span className="prompt-icon" aria-hidden="true">+</span>
+            <span>Search across public camera feeds or browse by region below.</span>
+          </div>
+        )}
+
+        <section className="regions-section" aria-label="Camera regions">
+          <div className="section-heading">
+            <span>Browse by region</span>
+            <span>{cameraSourceCatalog.length} sources</span>
+          </div>
+
+          {groupedSources.map((group) => (
+            <div className="source-group" key={group.name}>
+              <p className="source-group-title">{group.name}</p>
+              {group.sources.map((source) => {
+                const enabled = activeSources[source.id];
+                return (
+                  <button
+                    className={`region-row ${enabled ? "is-enabled" : "is-muted"}`}
+                    key={source.id}
+                    type="button"
+                    aria-pressed={enabled}
+                    onClick={() => onSourceToggle(source.id)}
+                  >
+                    <span className="source-swatch" style={{ backgroundColor: source.accent }} />
+                    <span className="region-copy">
+                      <strong>{source.label}</strong>
+                      <span>{source.category === "nature" ? "Nature" : source.category === "highway" ? "Highway cameras" : "Traffic cameras"}</span>
+                    </span>
+                    <span className="region-count">{formatCount(sourceCounts[source.id])}</span>
+                    <span className={`toggle-indicator ${enabled ? "is-on" : ""}`} aria-hidden="true" />
+                  </button>
+                );
+              })}
             </div>
-          `;
-        });
+          ))}
+        </section>
+      </div>
 
-        layerGroup.addLayer(marker);
-      }
-    });
-  } catch (error) {
-    console.error("Failed to load local MTO data:", error);
-  }
-};
+      <div className="panel-footer">
+        <span>Public camera sources</span>
+        <span>Auto-refresh 15s</span>
+      </div>
+    </aside>
+  );
+}
 
-const fetchQuebecCameras = async (layerGroup) => {
-  try {
-    const data = quebecMockData;
-
-    if (!data || !Array.isArray(data.features)) {
-      console.error("Mock data is missing features.");
-      return;
-    }
-
-    data.features.forEach((feature) => {
-      if (feature.geometry && feature.geometry.coordinates) {
-        const x = feature.geometry.coordinates[0];
-        const y = feature.geometry.coordinates[1];
-        const earthRadius = 6378137;
-        const lng = (x / earthRadius) * (180 / Math.PI);
-        const lat =
-          (2 * Math.atan(Math.exp(y / earthRadius)) - Math.PI / 2) *
-          (180 / Math.PI);
-
-        const marker = L.marker([lat, lng], { icon: greenIcon });
-
-        marker.bindPopup(() => {
-          const videoUrl = `https://www.quebec511.info/Carte/Fenetres/camera.ashx?id=${feature.properties.IDEcamera}&format=mp4`;
-
-          return `
-            <div style="width: 300px;">
-              <b style="font-size: 14px;">${feature.properties.DescriptionLocalisationEn || feature.properties.DescriptionLocalisationFr || "Camera"}</b><br/>
-               <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px; margin-bottom: 10px;">
-                <span class="pulsing-dot"></span>
-                <span style="color: red; font-weight: bold;">LIVE</span>
-                <span style="font-size: 11px; color: #666; margin-left: auto;">Updated: <span class="updated-timestamp">${new Date().toLocaleTimeString()}</span></span>
-              </div>
-              
-              <video 
-                src="${videoUrl}" 
-                autoplay 
-                loop 
-                muted 
-                playsinline
-                style="width: 100%; border-radius: 4px; background-color: #222;"
-                onerror="this.outerHTML='<div style=\\'width:100%;height:160px;background:#222;color:#666;text-align:center;line-height:160px;border-radius:4px;\\'>Video Feed Offline</div>'"
-              ></video>
-            </div>
-          `;
-        });
-
-        layerGroup.addLayer(marker);
-      }
-    });
-
-    const qcLabel = document.getElementById("qc-layer-label");
-    if (qcLabel) {
-      qcLabel.innerHTML = "";
-    }
-  } catch (error) {
-    console.error("Error processing mock Quebec data:", error);
-  }
-};
-
-const fetchBcCameras = (layerGroup, setBcCount) => {
-  try {
-    const cameras = bcMockData;
-    if (!cameras || cameras.length === 0) return;
-
-    let validCameras = 0;
-
-    cameras.forEach((camera) => {
-      const lat = parseFloat(camera.latitude);
-      const lng = parseFloat(camera.longitude);
-      const camName = camera.camName || "DriveBC Cam";
-      const camId = camera.id;
-
-      // BUILD THE NEW URL DIRECTLY USING THE ID
-      const imgUrl = `https://www.drivebc.ca/images/${camId}.jpg`;
-
-    
-      if (!isNaN(lat) && !isNaN(lng) && camId) {
-        validCameras++;
-        const marker = L.marker([lat, lng], { icon: yellowIcon });
-
-        marker.bindPopup(() => {
-          const popupId = `bc-${String(camId).replace(/[^a-zA-Z0-9]/g, "")}`;
-
-          return `
-            <div style="width: 300px;">
-              <b style="font-size: 14px;">${camName}</b><br/>
-               <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
-                <span class="pulsing-dot"></span>
-                <span style="color: red; font-weight: bold;">LIVE</span>
-                <span style="font-size: 11px; color: #666; margin-left: auto;">
-                  Sync Time: <b id="time-${popupId}" class="updated-timestamp">${new Date().toLocaleTimeString()}</b>
-                </span>
-              </div>
-              <img 
-                id="img-${popupId}"
-                src="${imgUrl}?t=${new Date().getTime()}" 
-                referrerpolicy="no-referrer"
-                style="width: 100%; border-radius: 4px; margin-top: 10px;"
-                onerror="this.onerror=null; this.src='https://placehold.co/300x200?text=DriveBC+Cam+Offline';"
-              />
-            </div>
-          `;
-        });
-        layerGroup.addLayer(marker);
-      }
-    });
-
-    setBcCount(validCameras);
-  } catch (error) {
-    console.error("Error processing BC JSON data:", error);
-  }
-};
-
-const fetchLondonCameras = (layerGroup, setLondonCount) => {
-  try {
-    const cameras = londonData;
-    if (!cameras || !Array.isArray(cameras)) return;
-
-    let validCount = 0;
-
-    cameras.forEach((camera) => {
-      const lat = camera.lat;
-      const lng = camera.lon;
-      const camName = camera.commonName;
-
-      // Find the specific 'videoUrl' inside the properties array
-      const videoProp = camera.additionalProperties?.find(
-        (p) => p.key === "videoUrl",
-      );
-      const videoUrl = videoProp ? videoProp.value : null;
-
-      // Backup image if video fails
-      const imageProp = camera.additionalProperties?.find(
-        (p) => p.key === "imageUrl",
-      );
-      const imageUrl = imageProp ? imageProp.value : null;
-
-      if (lat && lng && (videoUrl || imageUrl)) {
-        validCount++;
-        const marker = L.marker([lat, lng], { icon: violetIcon });
-
-        marker.bindPopup(() => {
-          return `
-            <div style="width: 300px;">
-              <b style="font-size: 14px;">🇬🇧 ${camName}</b><br/>
-               <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px; margin-bottom: 10px;">
-                <span class="pulsing-dot"></span>
-                <span style="color: red; font-weight: bold;">LIVE</span>
-                <span style="font-size: 11px; color: #666; margin-left: auto;">
-                  Sync: <b class="updated-timestamp">${new Date().toLocaleTimeString()}</b>
-                </span>
-              </div>
-              ${
-                videoUrl
-                  ? `
-                <video 
-                  src="${videoUrl}" 
-                  autoplay 
-                  loop 
-                  muted 
-                  playsinline
-                  style="width: 100%; border-radius: 4px; background-color: #000;"
-                  onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
-                ></video>
-              `
-                  : ""
-              }
-              <img 
-                src="${imageUrl}" 
-                style="width: 100%; border-radius: 4px; display: ${videoUrl ? "none" : "block"};" 
-                onerror="this.src='https://placehold.co/300x200?text=London+Feed+Offline';"
-              />
-            </div>
-          `;
-        });
-        layerGroup.addLayer(marker);
-      }
-    });
-    setLondonCount(validCount);
-  } catch (error) {
-    console.error("Error processing London data:", error);
-  }
-};
-
-const fetchCaliforniaCameras = (layerGroup, setCalCount) => {
-  try {
-    const cameras = californiaData.data || [];
-    if (cameras.length === 0) return;
-
-    let validCount = 0;
-
-    cameras.forEach((item) => {
-      const cctv = item.cctv;
-      const loc = cctv?.location;
-      const imgInfo = cctv?.imageData?.static;
-
-      const lat = parseFloat(loc?.latitude);
-      const lng = parseFloat(loc?.longitude);
-      const camName = loc?.locationName || "California Highway Cam";
-      const imgUrl = imgInfo?.currentImageURL || "";
-
-      if (!isNaN(lat) && !isNaN(lng) && imgUrl && cctv.inService === "true") {
-        validCount++;
-        const marker = L.marker([lat, lng], { icon: orangeIcon });
-
-        marker.bindPopup(() => {
-          const popupId = `cal-${cctv.index}`;
-          return `
-            <div style="width: 300px;">
-              <b style="font-size: 14px;">☀️ ${camName}</b><br/>
-              <i style="font-size: 11px; color: #666;">${loc.nearbyPlace}, ${loc.county} County</i>
-               <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
-                <span class="pulsing-dot"></span>
-                <span style="color: red; font-weight: bold;">LIVE</span>
-                <span style="font-size: 11px; color: #666; margin-left: auto;">
-                  Sync: <b class="updated-timestamp">${new Date().toLocaleTimeString()}</b>
-                </span>
-              </div>
-              <img 
-                id="img-${popupId}"
-                src="${imgUrl}?t=${new Date().getTime()}" 
-                referrerpolicy="no-referrer"
-                style="width: 100%; height: 180px; object-fit: cover; border-radius: 4px; margin-top: 10px; background-color: #222; display: block;"
-                onerror="this.src='https://placehold.co/300x180/222/666?text=Caltrans+Feed+Offline';"
-              />
-              <p style="font-size: 10px; color: #888; margin-top: 5px;">Route: ${loc.route} ${loc.direction}</p>
-            </div>
-          `;
-        });
-        layerGroup.addLayer(marker);
-      }
-    });
-
-    setCalCount(validCount);
-  } catch (error) {
-    console.error("Error processing California data:", error);
-  }
-};
-const fetchSydneyCameras = (layerGroup, setSydCount) => {
-  try { 
-    const features = sydneyData.features || [];
-    setSydCount(features.length);
-
-    features.forEach((f) => { 
-      const lat = f.geometry.coordinates[1];
-      const lng = f.geometry.coordinates[0];
-
-      const props = f.properties;
-
-      if (!isNaN(lat) && !isNaN(lng)) {
-        const marker = L.marker([lat, lng], { icon: blueIcon });
-
-        marker.bindPopup(() => {
-          const popupId = `syd-${f.id}`;
-          return `
-            <div style="width: 300px;">
-              <b style="font-size: 14px;">🇦🇺 ${props.title}</b><br/>
-              <i style="font-size: 11px; color: #666;">${props.view}</i>
-               <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
-                <span class="pulsing-dot"></span>
-                <span style="color: red; font-weight: bold;">LIVE</span>
-                <span style="font-size: 11px; color: #666; margin-left: auto;">
-                  Sync: <b class="updated-timestamp">${new Date().toLocaleTimeString()}</b>
-                </span>
-              </div>
-              <img 
-                id="img-${popupId}"
-                src="${props.href}?t=${Date.now()}" 
-                style="width: 100%; height: 180px; object-fit: cover; border-radius: 4px; margin-top: 10px; background-color: #222; display: block;"
-                onerror="this.src='https://placehold.co/300x180/222/666?text=Sydney+Offline';"
-              />
-            </div>
-          `;
-        });
-        layerGroup.addLayer(marker);
-      }
-    });
-  } catch (error) {
-    console.error("Sydney Fetch Error:", error);
-  }
-};
-
-const fetchIllinoisCameras = (layerGroup, setChiCount) => {
-  try {
-    const cameras = chicagoData.features || [];
-    setChiCount(cameras.length);
-
-    cameras.forEach((camera) => {
-      const attrs = camera.attributes;
-      const geo = camera.geometry; 
-      const lat = geo.y;
-      const lng = geo.x;
-      const camName = attrs.CameraLocation || "Chicago Camera";
-      const rawImgUrl = attrs.SnapShot;
-      
-      // THE FIX: Use wsrv.nl. It is a high-performance image proxy 
-      // that is much better at bypassing 403 hotlink protection.
-      const proxiedUrl = `https://wsrv.nl/?url=${encodeURIComponent(rawImgUrl)}&default=https://placehold.co/300x180/222/666?text=Feed+Offline`;
-
-      if (lat && lng && rawImgUrl) {
-        const marker = L.marker([lat, lng]);
-
-        marker.bindPopup(() => {
-          const popupId = `chi-${attrs.OBJECTID}`;
-          return `
-            <div style="width: 300px; color: white;">
-              <b style="font-size: 14px;">🏙️ ${camName}</b><br/>
-              <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
-                <span class="pulsing-dot"></span>
-                <span style="color: #ff3b30; font-weight: bold;">LIVE</span>
-                <span style="font-size: 11px; color: #aaa; margin-left: auto;">
-                  Sync: <b class="updated-timestamp">${new Date().toLocaleTimeString()}</b>
-                </span>
-              </div>
-              <img 
-                id="img-${popupId}"
-                src="${proxiedUrl}&t=${Date.now()}" 
-                referrerpolicy="no-referrer"
-                style="width: 100%; height: 180px; object-fit: cover; border-radius: 4px; margin-top: 10px; background-color: #222; display: block;"
-              />
-              <p style="font-size: 10px; color: #888; margin-top: 5px;">Direction: ${attrs.CameraDirection} | Updated: ${attrs.AgeInMinutes}m ago</p>
-            </div>
-          `;
-        });
-        layerGroup.addLayer(marker);
-      }
-    });
-  } catch (error) {
-    console.error("Chicago Fetch Error:", error);
-  }
-};
-
-const fetchYorkCameras = (layerGroup, setYorkCount) => {
-  try {
-    const features = yorkData.features || [];
-    setYorkCount(features.length);
-
-    features.forEach((feature) => {
-      const props = feature.properties;
-      const geom = feature.geometry;
-
-      // GeoJSON coordinates are [Longitude, Latitude]
-      if (geom && geom.coordinates) {
-        const lng = geom.coordinates[0];
-        const lat = geom.coordinates[1];
-        
-        const marker = L.marker([lat, lng], { icon: redIcon });
-
-        marker.bindPopup(() => {
-          const camId = props.FACILITYID;
-          const popupId = `york-${camId}`;
-          const rawImgUrl = props.photo; // Using the direct 'photo' link from your JSON
-          
-          // Proxying via wsrv.nl to handle any HTTPS/CORS issues on Vercel
-          const proxiedImg = `https://wsrv.nl/?url=${encodeURIComponent(rawImgUrl)}&t=${Date.now()}`;
-
-          return `
-            <div style="width: 300px;">
-              <b style="font-size: 14px;">📍 ${props.cameralocation || 'York Region'}</b><br/>
-              <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
-                <span class="pulsing-dot"></span>
-                <span style="color: red; font-weight: bold;">LIVE</span>
-                <span style="font-size: 11px; color: #666; margin-left: auto;">
-                  Updated: <b class="updated-timestamp">${new Date().toLocaleTimeString()}</b>
-                </span>
-              </div>
-              <img 
-                id="img-${popupId}"
-                src="${proxiedImg}" 
-                style="width: 100%; border-radius: 4px; margin-top: 10px; background-color: #222;"
-                onerror="this.src='https://placehold.co/300x200?text=York+Feed+Offline';"
-              />
-              <p style="font-size: 10px; color: #888; margin-top: 5px;">Intersection ID: ${camId}</p>
-            </div>
-          `;
-        });
-        layerGroup.addLayer(marker);
-      }
-    });
-  } catch (error) {
-    console.error("York Data Error:", error);
-  }
-};
 export default function App() {
   const mapContainer = useRef(null);
   const mapInstance = useRef(null);
-  const layerControlRef = useRef(null);
-  const refreshIntervalIdRef = useRef(null);
-  const activePopupRef = useRef(null);
+  const markerRefs = useRef(new Map());
+  const layerGroups = useRef(new Map());
+  const selectCameraRef = useRef(() => {});
+  const returnFocusRef = useRef(null);
 
-  const [isLegendOpen, setIsLegendOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [activeSources, setActiveSources] = useState(() =>
+    Object.fromEntries(cameraSourceCatalog.map((source) => [source.id, true])),
+  );
+  const [isExplorerOpen, setIsExplorerOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCamera, setSelectedCamera] = useState(null);
+  const [feedErrors, setFeedErrors] = useState({});
+  const [feedFallbacks, setFeedFallbacks] = useState({});
+  const [resultLimit, setResultLimit] = useState(12);
+  const [isMapReady, setIsMapReady] = useState(false);
+  const [refreshTick, setRefreshTick] = useState(() => Date.now());
 
-  const [yorkCount, setYorkCount] = useState(0);
-  const [ottawaCount, setOttawaCount] = useState(0);
-  const [mtoCount, setMtoCount] = useState(0);
-  const [albertaCount, setAlbertaCount] = useState(0);
-  const [bcCount, setBcCount] = useState(0);
-  const [londonCount, setLondonCount] = useState(0);
-  const [calCount, setCalCount] = useState(0);
-  const [sydCount, setSydCount] = useState(0);
-  const [chiCount, setChiCount] = useState(0);
-  const torontoCount = torontoData.Data ? torontoData.Data.length : 0;
-  const quebecCount = quebecMockData.features
-    ? quebecMockData.features.length
-    : 0;
-  const wildlifeCount = wildlifeData.features
-    ? wildlifeData.features.length
-    : 0;
-  const totalCameras =
-    ottawaCount +
-    mtoCount +
-    albertaCount +
-    torontoCount +
-    quebecCount +
-    bcCount +
-    londonCount +
-    calCount +
-    sydCount +
-    chiCount +
-    yorkCount +
-    wildlifeCount;
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const visibleCameras = cameraRecords.filter((camera) => {
+    const sourceEnabled = activeSources[camera.sourceId];
+    const categoryMatches = matchesCategory(camera, activeCategory);
+    const queryMatches = !normalizedQuery || camera.searchText.includes(normalizedQuery);
+    return sourceEnabled && categoryMatches && queryMatches;
+  });
 
-  useEffect(() => {
-    if (!mapInstance.current) {
-      // Initialize map
-      mapInstance.current = L.map(mapContainer.current).setView([40, -40], 3);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OpenStreetMap contributors",
-      }).addTo(mapInstance.current);
+  const selectCamera = useCallback((camera) => {
+    if (document.activeElement instanceof HTMLElement) {
+      returnFocusRef.current = document.activeElement;
+    }
+    setSelectedCamera(camera);
+    setIsExplorerOpen(false);
+    setRefreshTick(Date.now());
+    setFeedErrors((current) => {
+      if (!current[camera.id]) return current;
+      const next = { ...current };
+      delete next[camera.id];
+      return next;
+    });
+    setFeedFallbacks((current) => {
+      if (!current[camera.id]) return current;
+      const next = { ...current };
+      delete next[camera.id];
+      return next;
+    });
 
-      const clusterOptions = {
-        maxClusterRadius: 65,
-        disableClusteringAtZoom: 13,
-      };
-
-      // Initialize layer groups
-      const cityCameras = L.markerClusterGroup(clusterOptions).addTo(
-        mapInstance.current,
-      );
-      const mtoCameras = L.markerClusterGroup(clusterOptions).addTo(
-        mapInstance.current,
-      );
-      const quebecCameras = L.markerClusterGroup(clusterOptions).addTo(
-        mapInstance.current,
-      );
-      const torontoCameras = L.markerClusterGroup(clusterOptions).addTo(
-        mapInstance.current,
-      );
-      const albertaCameras = L.markerClusterGroup(clusterOptions).addTo(
-        mapInstance.current,
-      );
-      const wildlifeLayer = L.markerClusterGroup(clusterOptions).addTo(
-        mapInstance.current,
-      );
-      const bcCameras = L.markerClusterGroup(clusterOptions).addTo(
-        mapInstance.current,
-      );
-      const londonCameras = L.markerClusterGroup(clusterOptions).addTo(
-        mapInstance.current,
-      );
-      const calCameras = L.markerClusterGroup(clusterOptions).addTo(
-        mapInstance.current,
-      );
-      const sydLayer = L.markerClusterGroup(clusterOptions).addTo(
-        mapInstance.current,
-      );
-      const chicagoCameras = L.markerClusterGroup(clusterOptions).addTo(
-        mapInstance.current,
-      );
-      const yorkCameras = L.markerClusterGroup(clusterOptions).addTo(mapInstance.current);
-
-      const overlayMaps = {
-        "Wildlife Cams": wildlifeLayer,
-        "City of Ottawa": cityCameras,
-        "City of Toronto": torontoCameras,
-        "North York": yorkCameras,
-        "Ontario 511": mtoCameras,
-        "Alberta 511": albertaCameras,
-        "British Columbia 511": bcCameras,
-        California: calCameras,
-        "Québec 511 <span id='qc-layer-label' style='font-size: 11px; color: #d97706; font-style: italic; margin-left: 5px;'>(Loading 600+ live cams...) ⏳</span>":
-          quebecCameras,
-        London: londonCameras,
-        Sydney: sydLayer,
-        "Illinois": chicagoCameras,
-        
-      };
-
-      layerControlRef.current = L.control
-        .layers(null, overlayMaps)
-        .addTo(mapInstance.current);
-
-      // Pass state setters to dynamic fetches
-      fetchWildlifeCameras(wildlifeLayer);
-      fetchOttawaCameras(cityCameras, setOttawaCount);
-      fetchTorontoCameras(torontoCameras);
-      fetchMtoCameras(mtoCameras, setMtoCount);
-      fetchQuebecCameras(quebecCameras);
-      fetchAlbertaCameras(albertaCameras, setAlbertaCount);
-      fetchBcCameras(bcCameras, setBcCount);
-      fetchLondonCameras(londonCameras, setLondonCount);
-      fetchCaliforniaCameras(calCameras, setCalCount);
-      fetchSydneyCameras(sydLayer, setSydCount);
-      fetchIllinoisCameras(chicagoCameras, setChiCount);
-      fetchYorkCameras(yorkCameras, setYorkCount);
-
-
-      // GLOBAL POPUP WATCHER
-      mapInstance.current.on("popupopen", (e) => {
-        if (refreshIntervalIdRef.current)
-          clearInterval(refreshIntervalIdRef.current);
-
-        activePopupRef.current = e.popup;
-        const popupElement = activePopupRef.current.getElement();
-        if (!popupElement) return;
-
-        const img = popupElement.querySelector("img");
-        const video = popupElement.querySelector("video");
-        const timestampSpan = popupElement.querySelector(".updated-timestamp");
-
-        if (img || video) {
-          refreshIntervalIdRef.current = setInterval(() => {
-            if (!activePopupRef.current) {
-              clearInterval(refreshIntervalIdRef.current);
-              return;
-            }
-
-            // Image Refresh 
-            if (img) {
-              let rawUrl = img.src;
-              if (rawUrl.includes("?t=")) rawUrl = rawUrl.split("?t=")[0];
-              else if (rawUrl.includes("&t=")) rawUrl = rawUrl.split("&t=")[0];
-
-              const separator = rawUrl.includes("?") ? "&t=" : "?t=";
-              img.src = `${rawUrl}${separator}${Date.now()}`;
-            }
-
-            // Video Refresh
-            if (video) {
-              // london fix: we reload the existing resource to get the freshest loop.
-              video.load();
-              video.play().catch(() => {});
-            }
-
-            if (timestampSpan) {
-              timestampSpan.innerText = new Date().toLocaleTimeString();
-            }
-          }, 15000);
-        }
-      });
-
-      mapInstance.current.on("popupclose", () => {
-        if (refreshIntervalIdRef.current) {
-          clearInterval(refreshIntervalIdRef.current);
-          refreshIntervalIdRef.current = null;
-        }
-        activePopupRef.current = null;
+    if (mapInstance.current) {
+      const currentZoom = mapInstance.current.getZoom();
+      mapInstance.current.flyTo([camera.lat, camera.lng], Math.max(currentZoom, 10), {
+        duration: 0.6,
       });
     }
+  }, []);
+
+  useEffect(() => {
+    selectCameraRef.current = selectCamera;
+  }, [selectCamera]);
+
+  useEffect(() => {
+    if (!mapContainer.current || mapInstance.current) return undefined;
+
+    const markers = markerRefs.current;
+    const layers = layerGroups.current;
+
+    const map = L.map(mapContainer.current, {
+      zoomControl: false,
+      worldCopyJump: true,
+    }).setView(DEFAULT_MAP_VIEW, DEFAULT_MAP_ZOOM);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors",
+      maxZoom: 19,
+    }).addTo(map);
+
+    const clusterOptions = {
+      maxClusterRadius: 52,
+      disableClusteringAtZoom: 13,
+      showCoverageOnHover: false,
+      iconCreateFunction: (cluster) =>
+        L.divIcon({
+          className: "canopy-cluster",
+          html: `<span>${cluster.getChildCount()}</span>`,
+          iconSize: [38, 38],
+        }),
+    };
+
+    cameraSourceCatalog.forEach((source) => {
+      const group = L.markerClusterGroup(clusterOptions).addTo(map);
+      layers.set(source.id, group);
+    });
+
+    cameraRecords.forEach((camera) => {
+      const layer = layers.get(camera.sourceId);
+      if (!layer) return;
+
+      const marker = L.marker([camera.lat, camera.lng], {
+        icon: sourceMapIcon(camera.sourceId),
+        title: camera.name,
+      });
+
+      marker.on("click", () => selectCameraRef.current(camera));
+      layer.addLayer(marker);
+      markers.set(camera.id, marker);
+    });
+
+    mapInstance.current = map;
+    const readyFrame = window.requestAnimationFrame(() => setIsMapReady(true));
 
     return () => {
-      if (refreshIntervalIdRef.current) {
-        clearInterval(refreshIntervalIdRef.current);
-      }
-      if (mapInstance.current) {
-        mapInstance.current.remove();
-        mapInstance.current = null;
-      }
+      window.cancelAnimationFrame(readyFrame);
+      map.remove();
+      mapInstance.current = null;
+      markers.clear();
+      layers.clear();
     };
   }, []);
 
-  return (
-    <div style={{ position: "relative" }}>
-      <div ref={mapContainer} style={{ height: "100vh", width: "100vw" }} />
-<style>
-  {`
-    .count-badge { 
-      color: #00ff00 !important;
-      font-family: 'Courier New', Courier, monospace !important; 
-      margin-left: auto;
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map) return;
+
+    cameraRecords.forEach((camera) => {
+      const layer = layerGroups.current.get(camera.sourceId);
+      const marker = markerRefs.current.get(camera.id);
+      if (!layer || !marker) return;
+
+      const sourceEnabled = activeSources[camera.sourceId];
+      const categoryMatches = matchesCategory(camera, activeCategory);
+      const queryMatches = !normalizedQuery || camera.searchText.includes(normalizedQuery);
+      const visible = sourceEnabled && categoryMatches && queryMatches;
+
+      if (visible && !layer.hasLayer(marker)) layer.addLayer(marker);
+      if (!visible && layer.hasLayer(marker)) layer.removeLayer(marker);
+    });
+  }, [activeCategory, activeSources, normalizedQuery]);
+
+  useEffect(() => {
+    if (!selectedCamera || selectedCamera.feedType === "youtube") return undefined;
+
+    const interval = window.setInterval(() => {
+      setFeedErrors((current) => {
+        if (!current[selectedCamera.id]) return current;
+        const next = { ...current };
+        delete next[selectedCamera.id];
+        return next;
+      });
+      setRefreshTick(Date.now());
+    }, 15000);
+    return () => window.clearInterval(interval);
+  }, [selectedCamera]);
+
+  useEffect(() => {
+    if (!mapInstance.current) return undefined;
+
+    const frame = window.requestAnimationFrame(() => mapInstance.current?.invalidateSize());
+    return () => window.cancelAnimationFrame(frame);
+  }, [isExplorerOpen, selectedCamera]);
+
+  const toggleSource = (sourceId) => {
+    const nextValue = !activeSources[sourceId];
+    setActiveSources((current) => ({
+      ...current,
+      [sourceId]: !current[sourceId],
+    }));
+
+    if (selectedCamera?.sourceId === sourceId && !nextValue) {
+      setSelectedCamera(null);
     }
-  `}
-</style>
-      <div
-        style={{
-          position: "absolute",
-          bottom: "30px",
-          right: "20px",
-          zIndex: 1000,
-        }}
-      >
-        <div className="map-legend">
-          <div
-            className="legend-header"
-            onClick={() => setIsLegendOpen(!isLegendOpen)}
-            style={{
-              cursor: "pointer",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: isLegendOpen ? "8px" : "0px",
-            }}
-          >
-            <span>CAMERAS: ONLINE</span>
-            <span style={{ marginLeft: "10px" }}>
-              {isLegendOpen ? "▼" : "▲"}
-            </span>
-          </div>
+    setResultLimit(12);
+  };
 
-          {isLegendOpen && (
-            <>
-              <div className="legend-item">
-                <span
-                  className="dot"
-                  style={{ backgroundColor: "#e81123" }}
-                ></span>
-                <span>Ottawa Municipal</span>
-                <span className="count-badge">{ottawaCount}</span>
-              </div>
+  const handleCategoryChange = (category) => {
+    setActiveCategory(category);
+    setResultLimit(12);
+    if (selectedCamera && !matchesCategory(selectedCamera, category)) {
+      setSelectedCamera(null);
+    }
+  };
 
-              <div className="legend-item">
-                <span
-                  className="dot"
-                  style={{ backgroundColor: "#a020f0" }}
-                ></span>
-                <span>Toronto Municipal</span>
-                <span className="count-badge">{torontoCount}</span>
-              </div>
+  const handleSearchChange = (value) => {
+    const nextQuery = value.trim().toLowerCase();
+    setSearchQuery(value);
+    setResultLimit(12);
+    if (selectedCamera && nextQuery && !selectedCamera.searchText.includes(nextQuery)) {
+      setSelectedCamera(null);
+    }
+  };
 
-              <div className="legend-item">
-                <span
-                  className="dot"
-                  style={{ backgroundColor: "#0078d7" }}
-                ></span>
-                <span>Ontario 511 (MTO)</span>
-                <span className="count-badge">{mtoCount}</span>
-              </div>
+  const handleFeedError = () => {
+    if (!selectedCamera) return;
+    setFeedErrors((current) => ({ ...current, [selectedCamera.id]: true }));
+  };
 
-              <div className="legend-item">
-                <span
-                  className="dot"
-                  style={{ backgroundColor: "#00cc00" }}
-                ></span>
-                <span>Québec (Live Video)</span>
-                <span className="count-badge">{quebecCount}</span>
-              </div>
+  const handleFeedFallback = () => {
+    if (!selectedCamera) return;
+    setFeedFallbacks((current) => ({ ...current, [selectedCamera.id]: true }));
+  };
 
-              <div className="legend-item">
-                <span
-                  className="dot"
-                  style={{ backgroundColor: "#ff8c00" }}
-                ></span>
-                <span>Alberta 511</span>
-                <span className="count-badge">{albertaCount}</span>
-              </div>
-              <div className="legend-item">
-                <span
-                  className="dot"
-                  style={{ backgroundColor: "#ffea00" }}
-                ></span>
-                <span>DriveBC</span>
-                <span className="count-badge">{bcCount}</span>
-              </div>
-              <div className="legend-item">
-                <span
-                  className="dot"
-                  style={{ backgroundColor: "#ff1493" }}
-                ></span>
-                <span>London (Live Video)</span>
-                <span className="count-badge">{londonCount}</span>
-              </div>
-              <div className="legend-item">
-                <span
-                  className="dot"
-                  style={{ backgroundColor: "#ff8c00" }}
-                ></span>
-                <span>California</span>
-                <span className="count-badge">{calCount}</span>
-              </div>
-              <div className="legend-item">
-                <span
-                  className="dot"
-                  style={{ backgroundColor: "#ff8c00" }}
-                ></span>
-                <span>Sydney</span>
-                <span className="count-badge">{sydCount}</span>
-              </div>
-              <div className="legend-item">
-                <span
-                className="dot"
-                style={{ backgroundColor: "#ffea00" }}
-              ></span>
-              <span>Illinois</span>
-              <span className="count-badge">{chiCount}</span>
-            </div>
-            <div className="legend-item">
-  <span className="dot" style={{ backgroundColor: "#0078d7" }}></span>
-  <span>York Region</span>
-  <span className="count-badge">{yorkCount}</span>
-</div>
-            <div className="legend-item">
-              <span
-                  className="dot"
-                  style={{ backgroundColor: "#f0f70d" }}
-                ></span>
-                <span>Wildlife & Nature (Live)</span>
-                <span className="count-badge">{wildlifeCount}</span>
-              </div>
+  const closeSelectedCamera = () => {
+    setSelectedCamera(null);
+    window.requestAnimationFrame(() => {
+      const previousFocus = returnFocusRef.current;
+      if (previousFocus && document.contains(previousFocus)) {
+        previousFocus.focus();
+      } else if (window.matchMedia("(max-width: 680px)").matches) {
+        document.querySelector(".mobile-explore-toggle")?.focus();
+      } else {
+        mapContainer.current?.focus();
+      }
+    });
+  };
 
-              <div
-                style={{
-                  marginTop: "12px",
-                  paddingTop: "8px",
-                  borderTop: "1px solid #333",
-                  fontSize: "11px",
-                  color: "#00ff00",
-                  display: "flex",
-                  justifyContent: "space-between",
-                }}
-              >
-                <span>TOTAL FEEDS:</span>
-                <span>{totalCameras}</span>
-              </div>
+  return (
+    <div className={`app-shell ${selectedCamera ? "has-detail" : ""}`}>
+      <div ref={mapContainer} className="map-canvas" tabIndex="-1" aria-label="Global camera map" />
 
-              <div
-                style={{
-                  marginTop: "10px",
-                  fontSize: "10px",
-                  color: "#888",
-                  textAlign: "center",
-                }}
-              >
-                Auto-Refresh: 15s
-              </div>
-            </>
-          )}
+      <header className="topbar">
+        <div className="brand-lockup">
+          <span className="brand-mark">CS</span>
+          <span className="brand-copy">
+            <strong>CanSpy</strong>
+            <span>Global camera explorer</span>
+          </span>
         </div>
+
+        <label className="topbar-search">
+          <span className="search-icon" aria-hidden="true" />
+          <span className="sr-only">Search the camera network</span>
+          <input
+            value={searchQuery}
+            onChange={(event) => handleSearchChange(event.target.value)}
+            onFocus={() => setIsExplorerOpen(true)}
+            placeholder="Search city, road, or camera"
+            type="search"
+          />
+          <kbd>/</kbd>
+        </label>
+
+        <div className="topbar-meta">
+          <span className="source-status"><span className="status-dot" />Sources loaded</span>
+          <span>{formatCount(totalCameraCount)} public feeds</span>
+        </div>
+      </header>
+
+      <ExplorerPanel
+        activeCategory={activeCategory}
+        activeSources={activeSources}
+        isOpen={isExplorerOpen}
+        isMapReady={isMapReady}
+        matchingCameras={visibleCameras}
+        onCategoryChange={handleCategoryChange}
+        onClose={() => setIsExplorerOpen(false)}
+        onSelectCamera={selectCamera}
+        onSearchChange={handleSearchChange}
+        onShowMore={() => setResultLimit((limit) => limit + 12)}
+        onSourceToggle={toggleSource}
+        resultLimit={resultLimit}
+        searchQuery={searchQuery}
+        visibleCameraCount={visibleCameras.length}
+      />
+
+      <button
+        className="mobile-explore-toggle"
+        type="button"
+        aria-expanded={isExplorerOpen}
+        onClick={() => setIsExplorerOpen((open) => !open)}
+      >
+        <span className="toggle-menu-icon" aria-hidden="true">=</span>
+        Explore cameras
+        <span className="toggle-count">{formatCount(visibleCameras.length)}</span>
+      </button>
+
+      <div className="map-actions" aria-label="Map controls">
+        <button type="button" onClick={() => mapInstance.current?.zoomIn()} aria-label="Zoom in">+</button>
+        <button type="button" onClick={() => mapInstance.current?.zoomOut()} aria-label="Zoom out">&minus;</button>
+        <span className="map-actions-divider" />
+        <button className="reset-map" type="button" onClick={() => mapInstance.current?.flyTo(DEFAULT_MAP_VIEW, DEFAULT_MAP_ZOOM)}>
+          Reset view
+        </button>
       </div>
+
+      <div className="map-status">
+        <span className="status-dot" />
+        <span>Global view</span>
+        <span className="map-status-divider">/</span>
+        <strong>{formatCount(visibleCameras.length)} feeds</strong>
+      </div>
+
+      {selectedCamera && (
+        <CameraDetail
+          camera={selectedCamera}
+          hasError={Boolean(feedErrors[selectedCamera.id])}
+          usingFallback={Boolean(feedFallbacks[selectedCamera.id])}
+          refreshTick={refreshTick}
+          onClose={closeSelectedCamera}
+          onFeedError={handleFeedError}
+          onFeedFallback={handleFeedFallback}
+        />
+      )}
     </div>
   );
+}
+
+const sourceIcons = new Map(cameraSourceCatalog.map((source) => [source.id, source.icon]));
+
+function sourceMapIcon(sourceId) {
+  return sourceIcons.get(sourceId);
 }

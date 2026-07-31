@@ -1,0 +1,497 @@
+import L from "leaflet";
+
+import quebecMockData from "./quebecMockData.json";
+import torontoData from "./torontoMockData.json";
+import wildlifeData from "./wildlifeData.json";
+import bcMockData from "./bcMockData.json";
+import londonData from "./londonData.json";
+import californiaData from "./californiaData.json";
+import sydneyData from "./sydneyData.json";
+import chicagoData from "./chicagoData.json";
+import ottawaData from "./ottawaData.json";
+import ontarioData from "./ontarioData.json";
+import albertaData from "./albertaData.json";
+import yorkData from "./yorkData.json";
+
+const icon = (color) =>
+  new L.Icon({
+    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
+    shadowUrl:
+      "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41],
+  });
+
+const redIcon = icon("red");
+const blueIcon = icon("blue");
+const greenIcon = icon("green");
+const purpleIcon = icon("violet");
+const orangeIcon = icon("orange");
+const yellowIcon = icon("yellow");
+const violetIcon = icon("violet");
+const wildlifeIcon = icon("gold");
+
+export const cameraSourceCatalog = [
+  {
+    id: "ottawa",
+    label: "Ottawa Municipal",
+    shortLabel: "Ottawa",
+    group: "North America",
+    category: "traffic",
+    accent: "#e45d6f",
+    icon: redIcon,
+  },
+  {
+    id: "toronto",
+    label: "Toronto Municipal",
+    shortLabel: "Toronto",
+    group: "North America",
+    category: "traffic",
+    accent: "#8a6fe8",
+    icon: purpleIcon,
+  },
+  {
+    id: "york",
+    label: "York Region",
+    shortLabel: "York Region",
+    group: "North America",
+    category: "traffic",
+    accent: "#4f8edb",
+    icon: redIcon,
+  },
+  {
+    id: "ontario",
+    label: "Ontario 511",
+    shortLabel: "Ontario 511",
+    group: "North America",
+    category: "highway",
+    accent: "#3f88d2",
+    icon: blueIcon,
+  },
+  {
+    id: "quebec",
+    label: "Québec 511",
+    shortLabel: "Québec 511",
+    group: "North America",
+    category: "highway",
+    accent: "#4cae8d",
+    icon: greenIcon,
+  },
+  {
+    id: "alberta",
+    label: "Alberta 511",
+    shortLabel: "Alberta 511",
+    group: "North America",
+    category: "highway",
+    accent: "#e68a46",
+    icon: orangeIcon,
+  },
+  {
+    id: "bc",
+    label: "DriveBC",
+    shortLabel: "DriveBC",
+    group: "North America",
+    category: "highway",
+    accent: "#d8ad45",
+    icon: yellowIcon,
+  },
+  {
+    id: "california",
+    label: "California Caltrans",
+    shortLabel: "California",
+    group: "North America",
+    category: "highway",
+    accent: "#d9784f",
+    icon: orangeIcon,
+  },
+  {
+    id: "illinois",
+    label: "Illinois DOT",
+    shortLabel: "Illinois",
+    group: "North America",
+    category: "traffic",
+    accent: "#5b91a9",
+    icon: blueIcon,
+  },
+  {
+    id: "london",
+    label: "London TfL",
+    shortLabel: "London",
+    group: "Europe",
+    category: "traffic",
+    accent: "#7865d8",
+    icon: violetIcon,
+  },
+  {
+    id: "sydney",
+    label: "Sydney Transport",
+    shortLabel: "Sydney",
+    group: "Oceania",
+    category: "traffic",
+    accent: "#4292bf",
+    icon: blueIcon,
+  },
+  {
+    id: "wildlife",
+    label: "Wildlife & Nature",
+    shortLabel: "Wildlife",
+    group: "Nature",
+    category: "nature",
+    accent: "#84a84d",
+    icon: wildlifeIcon,
+  },
+];
+
+const sourceMap = Object.fromEntries(
+  cameraSourceCatalog.map((source) => [source.id, source]),
+);
+
+const isValidCoordinate = (lat, lng) =>
+  Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+
+const proxyImageUrl = (url) => {
+  if (!url) return null;
+
+  return `https://wsrv.nl/?url=${encodeURIComponent(url)}`;
+};
+
+const metadata = (...entries) =>
+  entries
+    .filter(([, value]) => value !== undefined && value !== null && value !== "")
+    .map(([label, value]) => ({ label, value: String(value) }));
+
+const createCamera = (sourceId, camera) => {
+  const source = sourceMap[sourceId];
+  const record = {
+    ...camera,
+    sourceId,
+    sourceLabel: source.label,
+    sourceGroup: source.group,
+    category: source.category,
+    accent: source.accent,
+  };
+
+  return {
+    ...record,
+    searchText: [
+      record.name,
+      record.sourceLabel,
+      record.sourceGroup,
+      ...(record.metadata || []).flatMap(({ value }) => value),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase(),
+  };
+};
+
+const records = [];
+
+wildlifeData.features.forEach((feature, index) => {
+  const [lng, lat] = feature.geometry.coordinates;
+  const { name, location, youtubeId } = feature.properties;
+
+  if (isValidCoordinate(lat, lng) && youtubeId) {
+    records.push(
+      createCamera("wildlife", {
+        id: `wildlife-${youtubeId || index}`,
+        name: name || "Wildlife camera",
+        lat,
+        lng,
+        feedType: "youtube",
+        previewUrl: `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&live=1&modestbranding=1&rel=0`,
+        metadata: metadata(["Location", location]),
+      }),
+    );
+  }
+});
+
+(torontoData.Data || []).forEach((camera) => {
+  const lat = parseFloat(camera.Latitude);
+  const lng = parseFloat(camera.Longitude);
+
+  if (isValidCoordinate(lat, lng) && camera.Number) {
+    records.push(
+      createCamera("toronto", {
+        id: `toronto-${camera.Number}`,
+        name: camera.Name || "Toronto traffic camera",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: `https://opendata.toronto.ca/transportation/tmc/rescucameraimages/CameraImages/loc${camera.Number}.jpg`,
+        metadata: metadata(["Camera number", camera.Number]),
+      }),
+    );
+  }
+});
+
+(albertaData || []).forEach((camera) => {
+  const lat = parseFloat(camera.Latitude);
+  const lng = parseFloat(camera.Longitude);
+  const baseImageUrl = camera.Url || camera.Views?.[0]?.Url;
+
+  if (isValidCoordinate(lat, lng) && baseImageUrl) {
+    records.push(
+      createCamera("alberta", {
+        id: `alberta-${camera.Id}`,
+        name: camera.Description || "Alberta highway camera",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: proxyImageUrl(baseImageUrl, "Alberta+Cam+Offline"),
+        metadata: metadata(["Roadway", camera.Roadway || "Alberta highway"]),
+      }),
+    );
+  }
+});
+
+const ottawaCameras = Array.isArray(ottawaData)
+  ? ottawaData
+  : ottawaData.cameras || [];
+
+ottawaCameras
+  .filter((camera) => camera.type === "camera" || camera.camera_number < 2000)
+  .forEach((camera) => {
+    const lat = parseFloat(camera.latitude);
+    const lng = parseFloat(camera.longitude);
+    const cameraNumber = camera.camera_number;
+
+    if (isValidCoordinate(lat, lng) && cameraNumber) {
+      records.push(
+        createCamera("ottawa", {
+          id: `ottawa-${cameraNumber}`,
+          name: camera.description || camera.name || "Ottawa traffic camera",
+          lat,
+          lng,
+          feedType: "current-frame",
+          previewUrl: proxyImageUrl(
+            `https://traffic.ottawa.ca/map/camera?id=${cameraNumber}`,
+            "City+Camera+Offline",
+          ),
+          metadata: metadata(["Camera number", cameraNumber]),
+        }),
+      );
+    }
+  });
+
+(ontarioData || []).forEach((camera) => {
+  const lat = parseFloat(camera.Latitude);
+  const lng = parseFloat(camera.Longitude);
+  const baseImageUrl = camera.Url || camera.Views?.[0]?.Url;
+
+  if (isValidCoordinate(lat, lng) && baseImageUrl) {
+    records.push(
+      createCamera("ontario", {
+        id: `ontario-${camera.Id}`,
+        name: camera.Description || camera.Location || "Ontario highway camera",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: proxyImageUrl(baseImageUrl, "Highway+Cam+Offline"),
+        metadata: metadata(["Roadway", camera.Roadway || "Ontario highway"]),
+      }),
+    );
+  }
+});
+
+(quebecMockData.features || []).forEach((feature) => {
+  if (!feature.geometry?.coordinates) return;
+
+  const [x, y] = feature.geometry.coordinates;
+  const earthRadius = 6378137;
+  const lng = (x / earthRadius) * (180 / Math.PI);
+  const lat =
+    (2 * Math.atan(Math.exp(y / earthRadius)) - Math.PI / 2) * (180 / Math.PI);
+  const name =
+    feature.properties.DescriptionLocalisationEn ||
+    feature.properties.DescriptionLocalisationFr ||
+    "Québec camera";
+
+  if (isValidCoordinate(lat, lng)) {
+    records.push(
+      createCamera("quebec", {
+        id: `quebec-${feature.properties.IDEcamera}`,
+        name,
+        lat,
+        lng,
+        feedType: "live-video",
+        previewUrl: `https://www.quebec511.info/Carte/Fenetres/camera.ashx?id=${feature.properties.IDEcamera}&format=mp4`,
+        metadata: metadata(["Provider", "Québec 511"]),
+      }),
+    );
+  }
+});
+
+(bcMockData || []).forEach((camera) => {
+  const lat = parseFloat(camera.latitude);
+  const lng = parseFloat(camera.longitude);
+  const cameraId = camera.id;
+
+  if (isValidCoordinate(lat, lng) && cameraId) {
+    records.push(
+      createCamera("bc", {
+        id: `bc-${cameraId}`,
+        name: camera.camName || "DriveBC camera",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: `https://www.drivebc.ca/images/${cameraId}.jpg`,
+        metadata: metadata(["Roadway", camera.roadway || "British Columbia highway"]),
+      }),
+    );
+  }
+});
+
+(londonData || []).forEach((camera, index) => {
+  const videoUrl = camera.additionalProperties?.find(
+    (property) => property.key === "videoUrl",
+  )?.value;
+  const imageUrl = camera.additionalProperties?.find(
+    (property) => property.key === "imageUrl",
+  )?.value;
+  const lat = parseFloat(camera.lat);
+  const lng = parseFloat(camera.lon);
+
+  if (isValidCoordinate(lat, lng) && (videoUrl || imageUrl)) {
+    records.push(
+      createCamera("london", {
+        id: `london-${camera.id || index}`,
+        name: camera.commonName || "London traffic camera",
+        lat,
+        lng,
+        feedType: videoUrl ? "live-video" : "current-frame",
+        previewUrl: videoUrl || imageUrl,
+        previewFallbackUrl: videoUrl && imageUrl ? imageUrl : null,
+        lastUpdated: camera.modified || camera.lastUpdated || camera.updated,
+        metadata: metadata(["View", camera.commonName]),
+      }),
+    );
+  }
+});
+
+(californiaData.data || []).forEach((item) => {
+  const cctv = item.cctv;
+  const location = cctv?.location;
+  const imageUrl = cctv?.imageData?.static?.currentImageURL;
+  const lat = parseFloat(location?.latitude);
+  const lng = parseFloat(location?.longitude);
+
+  if (isValidCoordinate(lat, lng) && imageUrl && cctv.inService === "true") {
+    records.push(
+      createCamera("california", {
+        id: `california-${cctv.index}`,
+        name: location.locationName || "California highway camera",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: imageUrl,
+        lastUpdated: cctv.recordTimestamp
+          ? `${cctv.recordTimestamp.recordDate} ${cctv.recordTimestamp.recordTime}`
+          : undefined,
+        metadata: metadata(
+          ["Nearby", location.nearbyPlace],
+          ["County", location.county],
+          ["Route", `${location.route || ""} ${location.direction || ""}`.trim()],
+        ),
+      }),
+    );
+  }
+});
+
+(sydneyData.features || []).forEach((feature, index) => {
+  const [lng, lat] = feature.geometry.coordinates;
+  const properties = feature.properties;
+
+  if (isValidCoordinate(lat, lng) && properties.href) {
+    records.push(
+      createCamera("sydney", {
+        id: `sydney-${feature.id || index}`,
+        name: properties.title || "Sydney traffic camera",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: properties.href,
+        metadata: metadata(["View", properties.view]),
+      }),
+    );
+  }
+});
+
+(chicagoData.features || []).forEach((camera) => {
+  const attributes = camera.attributes;
+  const geometry = camera.geometry;
+  const lat = parseFloat(geometry?.y);
+  const lng = parseFloat(geometry?.x);
+  const rawImageUrl = attributes?.SnapShot;
+
+  if (isValidCoordinate(lat, lng) && rawImageUrl) {
+    records.push(
+      createCamera("illinois", {
+        id: `illinois-${attributes.OBJECTID}`,
+        name: attributes.CameraLocation || "Chicago traffic camera",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: proxyImageUrl(rawImageUrl, "Feed+Offline"),
+        metadata: metadata(
+          ["Direction", attributes.CameraDirection],
+          ["Age", attributes.AgeInMinutes ? `${attributes.AgeInMinutes}m ago` : null],
+        ),
+      }),
+    );
+  }
+});
+
+(yorkData.features || []).forEach((feature) => {
+  const properties = feature.properties;
+  const [lng, lat] = feature.geometry?.coordinates || [];
+
+  if (isValidCoordinate(lat, lng) && properties.photo) {
+    records.push(
+      createCamera("york", {
+        id: `york-${properties.FACILITYID}`,
+        name: properties.cameralocation || "York Region camera",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: proxyImageUrl(properties.photo, "York+Feed+Offline"),
+        metadata: metadata(["Intersection ID", properties.FACILITYID]),
+      }),
+    );
+  }
+});
+
+export const cameraRecords = records;
+
+export const sourceCounts = cameraRecords.reduce((counts, camera) => {
+  counts[camera.sourceId] = (counts[camera.sourceId] || 0) + 1;
+  return counts;
+}, Object.fromEntries(cameraSourceCatalog.map((source) => [source.id, 0])));
+
+export const totalCameraCount = cameraRecords.length;
+
+export const groupedSources = cameraSourceCatalog.reduce((groups, source) => {
+  const group = groups.find((item) => item.name === source.group);
+  if (group) {
+    group.sources.push(source);
+  } else {
+    groups.push({ name: source.group, sources: [source] });
+  }
+  return groups;
+}, []);
+
+export const matchesCategory = (camera, category) => {
+  if (category === "all") return true;
+  if (category === "video") {
+    return camera.feedType === "live-video" || camera.feedType === "youtube";
+  }
+  return camera.category === category;
+};
+
+export const feedTypeLabel = (feedType) => {
+  if (feedType === "youtube") return "Live stream";
+  if (feedType === "live-video") return "Live video";
+  return "Current frame";
+};
