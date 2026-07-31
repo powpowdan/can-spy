@@ -4,7 +4,10 @@
 
 [![global-cam.vercel.app](https://img.shields.io/badge/live-global--cam.vercel.app-00ff00)](https://global-cam.vercel.app/)
 
-![CanSpy](src/assets/Capture.JPG)
+<div style="display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+  <img src="src/assets/Capture.JPG" alt="CanSpy desktop">
+  <img src="src/assets/Capture2.JPG" alt="CanSpy mobile" style="max-width:280px;">
+</div>
 
 ## What is this?
 
