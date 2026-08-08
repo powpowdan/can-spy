@@ -12,6 +12,7 @@ import ottawaData from "./ottawaData.json";
 import ontarioData from "./ontarioData.json";
 import albertaData from "./albertaData.json";
 import yorkData from "./yorkData.json";
+import alertWestData from "./alertWestData.json";
 
 const icon = (color) =>
   new L.Icon({
@@ -141,6 +142,15 @@ export const cameraSourceCatalog = [
     category: "nature",
     accent: "#84a84d",
     icon: wildlifeIcon,
+  },
+  {
+    id: "alertwest",
+    label: "AlertWest Fire Cams",
+    shortLabel: "AlertWest",
+    group: "Nature",
+    category: "nature",
+    accent: "#e0533d",
+    icon: orangeIcon,
   },
 ];
 
@@ -458,6 +468,27 @@ ottawaCameras
         feedType: "current-frame",
         previewUrl: proxyImageUrl(properties.photo, "York+Feed+Offline"),
         metadata: metadata(["Intersection ID", properties.FACILITYID]),
+      }),
+    );
+  }
+});
+
+(alertWestData || []).forEach((camera) => {
+  const { name, source, siteId, lat, lng, state, county } = camera;
+
+  if (isValidCoordinate(lat, lng) && name) {
+    records.push(
+      createCamera("alertwest", {
+        id: `alertwest-${siteId || name}`,
+        name: (source || name).replace(/_/g, " "),
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: `https://alertwest.live/api/firecams/v0/currentimage?name=${encodeURIComponent(name)}`,
+        metadata: metadata(
+          ["State", state],
+          ["County", county],
+        ),
       }),
     );
   }
