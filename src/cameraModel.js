@@ -13,6 +13,7 @@ import ontarioData from "./ontarioData.json";
 import albertaData from "./albertaData.json";
 import yorkData from "./yorkData.json";
 import alertWestData from "./alertWestData.json";
+import finlandData from "./finlandData.json";
 
 const icon = (color) =>
   new L.Icon({
@@ -151,6 +152,15 @@ export const cameraSourceCatalog = [
     category: "nature",
     accent: "#e0533d",
     icon: orangeIcon,
+  },
+  {
+    id: "finland",
+    label: "Finland Weather Cams",
+    shortLabel: "Finland",
+    group: "Europe",
+    category: "highway",
+    accent: "#2a9d8f",
+    icon: blueIcon,
   },
 ];
 
@@ -492,6 +502,27 @@ ottawaCameras
       }),
     );
   }
+});
+
+(finlandData || []).forEach((station) => {
+  const { stationId, name, lat, lng, presets } = station;
+
+  if (!isValidCoordinate(lat, lng) || !Array.isArray(presets)) return;
+
+  presets.forEach((presetId, index) => {
+    if (!presetId) return;
+    records.push(
+      createCamera("finland", {
+        id: `finland-${presetId}`,
+        name: `${(name || stationId).replace(/_/g, " ")} · view ${index + 1}`,
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: `https://weathercam.digitraffic.fi/${presetId}.jpg`,
+        metadata: metadata(["Station", stationId]),
+      }),
+    );
+  });
 });
 
 export const cameraRecords = records;
