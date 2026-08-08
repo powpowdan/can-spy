@@ -36,7 +36,9 @@ Started as a way to watch Ottawa traffic. Now it's a global map of public traffi
 | London, UK (TfL) | Video (MP4) |
 | Finland (Fintraffic Digitraffic) | Image |
 | California (Caltrans) | Image |
+| Washington (WSDOT) | Image |
 | Sydney, NSW | Image |
+| New Zealand (NZTA/Waka Kotahi) | Image |
 | Chicago / Illinois | Image |
 | Wildlife cams (worldwide) | YouTube |
 
@@ -60,7 +62,7 @@ Camera data is pre-fetched into static JSON files — no live API calls at runti
 
 ## Data Sources
 
-City of Ottawa, Ontario 511, City of Toronto Open Data, Quebec 511, Alberta 511, DriveBC, Transport for London (TfL JamCams), Fintraffic Digitraffic, Caltrans, Transport for NSW, Chicago DOT, York Region, and various YouTube live streams.
+City of Ottawa, Ontario 511, City of Toronto Open Data, Quebec 511, Alberta 511, DriveBC, Transport for London (TfL JamCams), Fintraffic Digitraffic, Caltrans, WSDOT, Transport for NSW, NZTA/Waka Kotahi, Chicago DOT, York Region, and various YouTube live streams.
 
 ## Scripts
 
