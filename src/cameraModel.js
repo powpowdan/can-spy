@@ -14,6 +14,8 @@ import albertaData from "./albertaData.json";
 import yorkData from "./yorkData.json";
 import alertWestData from "./alertWestData.json";
 import finlandData from "./finlandData.json";
+import nztaData from "./nztaData.json";
+import wsdotData from "./wsdotData.json";
 
 const icon = (color) =>
   new L.Icon({
@@ -161,6 +163,24 @@ export const cameraSourceCatalog = [
     category: "highway",
     accent: "#2a9d8f",
     icon: blueIcon,
+  },
+  {
+    id: "nzta",
+    label: "New Zealand Traffic (NZTA)",
+    shortLabel: "New Zealand",
+    group: "Oceania",
+    category: "highway",
+    accent: "#15aabf",
+    icon: blueIcon,
+  },
+  {
+    id: "wsdot",
+    label: "Washington Traffic (WSDOT)",
+    shortLabel: "Washington",
+    group: "North America",
+    category: "highway",
+    accent: "#2b8a3e",
+    icon: greenIcon,
   },
 ];
 
@@ -523,6 +543,46 @@ ottawaCameras
       }),
     );
   });
+});
+
+(nztaData || []).forEach((camera) => {
+  const { objectId, name, lat, lng, imageUrl, direction, region, description } = camera;
+
+  if (isValidCoordinate(lat, lng) && imageUrl) {
+    records.push(
+      createCamera("nzta", {
+        id: `nzta-${objectId}`,
+        name: name || "New Zealand traffic camera",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: proxyImageUrl(imageUrl),
+        metadata: metadata(
+          ["Direction", direction],
+          ["Region", region],
+          ["View", description],
+        ),
+      }),
+    );
+  }
+});
+
+(wsdotData || []).forEach((camera) => {
+  const { objectId, name, lat, lng, imageUrl, direction } = camera;
+
+  if (isValidCoordinate(lat, lng) && imageUrl) {
+    records.push(
+      createCamera("wsdot", {
+        id: `wsdot-${objectId}`,
+        name: name || "Washington traffic camera",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: imageUrl,
+        metadata: metadata(["Direction", direction]),
+      }),
+    );
+  }
 });
 
 export const cameraRecords = records;
