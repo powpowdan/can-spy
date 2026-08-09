@@ -22,6 +22,7 @@ import oregonData from "./oregonData.json";
 import newfoundlandData from "./newfoundlandData.json";
 import floridaData from "./floridaData.json";
 import michiganData from "./michiganData.json";
+import salemData from "./salemData.json";
 
 const icon = (color) =>
   new L.Icon({
@@ -241,6 +242,15 @@ export const cameraSourceCatalog = [
     category: "highway",
     accent: "#1c7ed6",
     icon: blueIcon,
+  },
+  {
+    id: "salem",
+    label: "Salem, OR Traffic Cameras",
+    shortLabel: "Salem",
+    group: "North America",
+    category: "traffic",
+    accent: "#f06595",
+    icon: violetIcon,
   },
 ];
 
@@ -750,6 +760,27 @@ ottawaCameras
         metadata: metadata(
           ["County", county],
           ["Direction", direction],
+        ),
+      }),
+    );
+  }
+});
+
+(salemData || []).forEach((camera) => {
+  const { objectId, intersection, lat, lng, imageUrl, agency, camType } = camera;
+
+  if (isValidCoordinate(lat, lng) && imageUrl) {
+    records.push(
+      createCamera("salem", {
+        id: `salem-${objectId}`,
+        name: intersection || "Salem traffic camera",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: imageUrl,
+        metadata: metadata(
+          ["Agency", agency],
+          ["Type", camType],
         ),
       }),
     );

@@ -39,6 +39,7 @@ Started as a way to watch Ottawa traffic. Now it's a global map of public traffi
 | California (Caltrans) | Image |
 | Florida (511) | Image |
 | Oregon (TripCheck) | Image |
+| Salem, OR | Image |
 | Washington (WSDOT) | Image |
 | Iowa DOT | Image |
 | Michigan DOT (MiDrive) | Image |
@@ -68,7 +69,7 @@ Camera data is pre-fetched into static JSON files — no live API calls at runti
 
 ## Data Sources
 
-City of Ottawa, Ontario 511, City of Toronto Open Data, Quebec 511, Alberta 511, DriveBC, Newfoundland & Labrador Ti, Transport for London (TfL JamCams), Fintraffic Digitraffic, Caltrans, Oregon TripCheck, Florida 511, WSDOT, Iowa DOT, Michigan DOT (MiDrive), City of Austin, Transport for NSW, NZTA/Waka Kotahi, Chicago DOT, York Region, and various YouTube live streams.
+City of Ottawa, Ontario 511, City of Toronto Open Data, Quebec 511, Alberta 511, DriveBC, Newfoundland & Labrador Ti, Transport for London (TfL JamCams), Fintraffic Digitraffic, Caltrans, Oregon TripCheck, Salem OR, Florida 511, WSDOT, Iowa DOT, Michigan DOT (MiDrive), City of Austin, Transport for NSW, NZTA/Waka Kotahi, Chicago DOT, York Region, and various YouTube live streams.
 
 ## Scripts
 
