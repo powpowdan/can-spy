@@ -24,6 +24,7 @@ import floridaData from "./floridaData.json";
 import michiganData from "./michiganData.json";
 import salemData from "./salemData.json";
 import hawaiiData from "./hawaiiData.json";
+import seattleData from "./seattleData.json";
 
 const icon = (color) =>
   new L.Icon({
@@ -261,6 +262,15 @@ export const cameraSourceCatalog = [
     category: "highway",
     accent: "#cc5de8",
     icon: violetIcon,
+  },
+  {
+    id: "seattle",
+    label: "Seattle Traffic (SDOT)",
+    shortLabel: "Seattle",
+    group: "North America",
+    category: "traffic",
+    accent: "#37b24d",
+    icon: greenIcon,
   },
 ];
 
@@ -809,6 +819,24 @@ ottawaCameras
         lng,
         feedType: "current-frame",
         previewUrl: imageUrl.replace(/^http:/i, "https:"),
+      }),
+    );
+  }
+});
+
+(seattleData || []).forEach((camera) => {
+  const { objectId, location, lat, lng, imageUrl, ownership } = camera;
+
+  if (isValidCoordinate(lat, lng) && imageUrl) {
+    records.push(
+      createCamera("seattle", {
+        id: `seattle-${objectId}`,
+        name: location || "Seattle traffic camera",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: proxyImageUrl(imageUrl),
+        metadata: metadata(["Owner", ownership]),
       }),
     );
   }
