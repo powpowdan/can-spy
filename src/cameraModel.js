@@ -16,6 +16,10 @@ import alertWestData from "./alertWestData.json";
 import finlandData from "./finlandData.json";
 import nztaData from "./nztaData.json";
 import wsdotData from "./wsdotData.json";
+import iowaData from "./iowaData.json";
+import austinData from "./austinData.json";
+import oregonData from "./oregonData.json";
+import newfoundlandData from "./newfoundlandData.json";
 
 const icon = (color) =>
   new L.Icon({
@@ -181,6 +185,42 @@ export const cameraSourceCatalog = [
     category: "highway",
     accent: "#2b8a3e",
     icon: greenIcon,
+  },
+  {
+    id: "iowa",
+    label: "Iowa DOT Traffic",
+    shortLabel: "Iowa",
+    group: "North America",
+    category: "highway",
+    accent: "#c2255c",
+    icon: redIcon,
+  },
+  {
+    id: "austin",
+    label: "Austin Traffic Cameras",
+    shortLabel: "Austin",
+    group: "North America",
+    category: "traffic",
+    accent: "#1864ab",
+    icon: blueIcon,
+  },
+  {
+    id: "oregon",
+    label: "Oregon Traffic (TripCheck)",
+    shortLabel: "Oregon",
+    group: "North America",
+    category: "highway",
+    accent: "#6741d9",
+    icon: violetIcon,
+  },
+  {
+    id: "newfoundland",
+    label: "Newfoundland & Labrador Hwy Cams",
+    shortLabel: "Newfoundland",
+    group: "North America",
+    category: "highway",
+    accent: "#5f3dc4",
+    icon: violetIcon,
   },
 ];
 
@@ -580,6 +620,74 @@ ottawaCameras
         feedType: "current-frame",
         previewUrl: imageUrl,
         metadata: metadata(["Direction", direction]),
+      }),
+    );
+  }
+});
+
+(iowaData || []).forEach((camera) => {
+  const { deviceId, name, lat, lng, imageUrl } = camera;
+
+  if (isValidCoordinate(lat, lng) && imageUrl) {
+    records.push(
+      createCamera("iowa", {
+        id: `iowa-${deviceId}`,
+        name: name || "Iowa traffic camera",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: imageUrl,
+      }),
+    );
+  }
+});
+
+(austinData || []).forEach((camera) => {
+  const { cameraId, locationName, lat, lng, screenshotAddress } = camera;
+
+  if (isValidCoordinate(lat, lng) && screenshotAddress) {
+    records.push(
+      createCamera("austin", {
+        id: `austin-${cameraId}`,
+        name: (locationName || "Austin traffic camera").trim(),
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: screenshotAddress,
+      }),
+    );
+  }
+});
+
+(oregonData || []).forEach((camera) => {
+  const { cameraId, title, lat, lng, imageUrl } = camera;
+
+  if (isValidCoordinate(lat, lng) && imageUrl) {
+    records.push(
+      createCamera("oregon", {
+        id: `oregon-${cameraId}`,
+        name: title || "Oregon highway camera",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: imageUrl,
+      }),
+    );
+  }
+});
+
+(newfoundlandData || []).forEach((camera) => {
+  const { objectId, location, lat, lng, imageUrl } = camera;
+
+  if (isValidCoordinate(lat, lng) && imageUrl) {
+    records.push(
+      createCamera("newfoundland", {
+        id: `newfoundland-${objectId}`,
+        name: location || "Newfoundland & Labrador highway camera",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: imageUrl,
       }),
     );
   }

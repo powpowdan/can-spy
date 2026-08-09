@@ -33,10 +33,14 @@ Started as a way to watch Ottawa traffic. Now it's a global map of public traffi
 | Quebec (511) | Video (MP4) |
 | Alberta (511) | Image |
 | British Columbia (DriveBC) | Image |
+| Newfoundland & Labrador | Image |
 | London, UK (TfL) | Video (MP4) |
 | Finland (Fintraffic Digitraffic) | Image |
 | California (Caltrans) | Image |
+| Oregon (TripCheck) | Image |
 | Washington (WSDOT) | Image |
+| Iowa DOT | Image |
+| Austin, TX | Image |
 | Sydney, NSW | Image |
 | New Zealand (NZTA/Waka Kotahi) | Image |
 | Chicago / Illinois | Image |
@@ -62,7 +66,7 @@ Camera data is pre-fetched into static JSON files — no live API calls at runti
 
 ## Data Sources
 
-City of Ottawa, Ontario 511, City of Toronto Open Data, Quebec 511, Alberta 511, DriveBC, Transport for London (TfL JamCams), Fintraffic Digitraffic, Caltrans, WSDOT, Transport for NSW, NZTA/Waka Kotahi, Chicago DOT, York Region, and various YouTube live streams.
+City of Ottawa, Ontario 511, City of Toronto Open Data, Quebec 511, Alberta 511, DriveBC, Newfoundland & Labrador Ti, Transport for London (TfL JamCams), Fintraffic Digitraffic, Caltrans, Oregon TripCheck, WSDOT, Iowa DOT, City of Austin, Transport for NSW, NZTA/Waka Kotahi, Chicago DOT, York Region, and various YouTube live streams.
 
 ## Scripts
 
