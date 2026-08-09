@@ -25,6 +25,7 @@ import michiganData from "./michiganData.json";
 import salemData from "./salemData.json";
 import hawaiiData from "./hawaiiData.json";
 import seattleData from "./seattleData.json";
+import utahData from "./utahData.json";
 
 const icon = (color) =>
   new L.Icon({
@@ -271,6 +272,15 @@ export const cameraSourceCatalog = [
     category: "traffic",
     accent: "#37b24d",
     icon: greenIcon,
+  },
+  {
+    id: "utah",
+    label: "Utah DOT Traffic",
+    shortLabel: "Utah",
+    group: "North America",
+    category: "highway",
+    accent: "#d9480f",
+    icon: orangeIcon,
   },
 ];
 
@@ -837,6 +847,24 @@ ottawaCameras
         feedType: "current-frame",
         previewUrl: proxyImageUrl(imageUrl),
         metadata: metadata(["Owner", ownership]),
+      }),
+    );
+  }
+});
+
+(utahData || []).forEach((camera) => {
+  const { objectId, displayName, lat, lng, imageUrl, direction } = camera;
+
+  if (isValidCoordinate(lat, lng) && imageUrl) {
+    records.push(
+      createCamera("utah", {
+        id: `utah-${objectId}`,
+        name: displayName || "Utah traffic camera",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: imageUrl.replace(/^http:/i, "https:"),
+        metadata: metadata(["Direction", direction]),
       }),
     );
   }
