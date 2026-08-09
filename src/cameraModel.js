@@ -21,6 +21,7 @@ import austinData from "./austinData.json";
 import oregonData from "./oregonData.json";
 import newfoundlandData from "./newfoundlandData.json";
 import floridaData from "./floridaData.json";
+import michiganData from "./michiganData.json";
 
 const icon = (color) =>
   new L.Icon({
@@ -231,6 +232,15 @@ export const cameraSourceCatalog = [
     category: "highway",
     accent: "#fa5252",
     icon: redIcon,
+  },
+  {
+    id: "michigan",
+    label: "Michigan Traffic (MiDrive)",
+    shortLabel: "Michigan",
+    group: "North America",
+    category: "highway",
+    accent: "#1c7ed6",
+    icon: blueIcon,
   },
 ];
 
@@ -718,6 +728,27 @@ ottawaCameras
         metadata: metadata(
           ["County", county],
           ["Highway", highway],
+          ["Direction", direction],
+        ),
+      }),
+    );
+  }
+});
+
+(michiganData || []).forEach((camera) => {
+  const { objectId, route, location, lat, lng, imageUrl, county, direction } = camera;
+
+  if (isValidCoordinate(lat, lng) && imageUrl) {
+    records.push(
+      createCamera("michigan", {
+        id: `michigan-${objectId}`,
+        name: `${route || ""}${location || ""}`.trim() || "Michigan traffic camera",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: imageUrl,
+        metadata: metadata(
+          ["County", county],
           ["Direction", direction],
         ),
       }),
