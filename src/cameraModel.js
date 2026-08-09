@@ -20,6 +20,7 @@ import iowaData from "./iowaData.json";
 import austinData from "./austinData.json";
 import oregonData from "./oregonData.json";
 import newfoundlandData from "./newfoundlandData.json";
+import floridaData from "./floridaData.json";
 
 const icon = (color) =>
   new L.Icon({
@@ -221,6 +222,15 @@ export const cameraSourceCatalog = [
     category: "highway",
     accent: "#5f3dc4",
     icon: violetIcon,
+  },
+  {
+    id: "florida",
+    label: "Florida 511 Traffic",
+    shortLabel: "Florida",
+    group: "North America",
+    category: "highway",
+    accent: "#fa5252",
+    icon: redIcon,
   },
 ];
 
@@ -688,6 +698,28 @@ ottawaCameras
         lng,
         feedType: "current-frame",
         previewUrl: imageUrl,
+      }),
+    );
+  }
+});
+
+(floridaData || []).forEach((camera) => {
+  const { objectId, description, lat, lng, imageUrl, county, highway, direction } = camera;
+
+  if (isValidCoordinate(lat, lng) && imageUrl) {
+    records.push(
+      createCamera("florida", {
+        id: `florida-${objectId}`,
+        name: description || "Florida traffic camera",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: imageUrl,
+        metadata: metadata(
+          ["County", county],
+          ["Highway", highway],
+          ["Direction", direction],
+        ),
       }),
     );
   }
