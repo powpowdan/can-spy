@@ -23,6 +23,7 @@ import newfoundlandData from "./newfoundlandData.json";
 import floridaData from "./floridaData.json";
 import michiganData from "./michiganData.json";
 import salemData from "./salemData.json";
+import hawaiiData from "./hawaiiData.json";
 
 const icon = (color) =>
   new L.Icon({
@@ -250,6 +251,15 @@ export const cameraSourceCatalog = [
     group: "North America",
     category: "traffic",
     accent: "#f06595",
+    icon: violetIcon,
+  },
+  {
+    id: "hawaii",
+    label: "Hawaii DOT Traffic",
+    shortLabel: "Hawaii",
+    group: "North America",
+    category: "highway",
+    accent: "#cc5de8",
     icon: violetIcon,
   },
 ];
@@ -782,6 +792,23 @@ ottawaCameras
           ["Agency", agency],
           ["Type", camType],
         ),
+      }),
+    );
+  }
+});
+
+(hawaiiData || []).forEach((camera) => {
+  const { objectId, description, lat, lng, imageUrl } = camera;
+
+  if (isValidCoordinate(lat, lng) && imageUrl) {
+    records.push(
+      createCamera("hawaii", {
+        id: `hawaii-${objectId}`,
+        name: description || "Hawaii traffic camera",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: imageUrl.replace(/^http:/i, "https:"),
       }),
     );
   }
