@@ -51,6 +51,7 @@ Started as a way to watch Ottawa traffic. Now it's a global map of public traffi
 | New Zealand (NZTA/Waka Kotahi) | Image |
 | Chicago / Illinois | Image |
 | Wildlife cams (worldwide) | YouTube |
+| EPA Regional Haze (US parks) | Image |
 
 ## Tech Stack
 
@@ -72,7 +73,7 @@ Camera data is pre-fetched into static JSON files — no live API calls at runti
 
 ## Data Sources
 
-City of Ottawa, Ontario 511, City of Toronto Open Data, Quebec 511, Alberta 511, DriveBC, Newfoundland & Labrador Ti, Transport for London (TfL JamCams), Fintraffic Digitraffic, Caltrans, Hawaii DOT, Oregon TripCheck, Salem OR, Florida 511, WSDOT, Seattle SDOT, Iowa DOT, Michigan DOT (MiDrive), Utah DOT, City of Austin, Transport for NSW, NZTA/Waka Kotahi, Chicago DOT, York Region, and various YouTube live streams.
+City of Ottawa, Ontario 511, City of Toronto Open Data, Quebec 511, Alberta 511, DriveBC, Newfoundland & Labrador Ti, Transport for London (TfL JamCams), Fintraffic Digitraffic, Caltrans, Hawaii DOT, Oregon TripCheck, Salem OR, Florida 511, WSDOT, Seattle SDOT, Iowa DOT, Michigan DOT (MiDrive), Utah DOT, City of Austin, Transport for NSW, NZTA/Waka Kotahi, Chicago DOT, York Region, EPA Regional Haze, and various YouTube live streams.
 
 ## Scripts
 
