@@ -26,7 +26,6 @@ import salemData from "./salemData.json";
 import hawaiiData from "./hawaiiData.json";
 import seattleData from "./seattleData.json";
 import utahData from "./utahData.json";
-import epaHazeData from "./epaHazeData.json";
 import geonetVolcanoData from "./geonetVolcanoData.json";
 
 const icon = (color) =>
@@ -283,15 +282,6 @@ export const cameraSourceCatalog = [
     category: "highway",
     accent: "#d9480f",
     icon: orangeIcon,
-  },
-  {
-    id: "epaHaze",
-    label: "EPA Regional Haze Webcams",
-    shortLabel: "EPA Haze",
-    group: "Nature",
-    category: "nature",
-    accent: "#1971c2",
-    icon: blueIcon,
   },
   {
     id: "geonetVolcano",
@@ -885,23 +875,6 @@ ottawaCameras
         feedType: "current-frame",
         previewUrl: imageUrl.replace(/^http:/i, "https:"),
         metadata: metadata(["Direction", direction]),
-      }),
-    );
-  }
-});
-
-(epaHazeData || []).forEach((camera) => {
-  const { objectId, site, lat, lng, imageUrl } = camera;
-
-  if (isValidCoordinate(lat, lng) && imageUrl) {
-    records.push(
-      createCamera("epaHaze", {
-        id: `epa-${objectId}`,
-        name: site || "EPA haze webcam",
-        lat,
-        lng,
-        feedType: "current-frame",
-        previewUrl: imageUrl,
       }),
     );
   }
