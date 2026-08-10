@@ -27,6 +27,7 @@ import hawaiiData from "./hawaiiData.json";
 import seattleData from "./seattleData.json";
 import utahData from "./utahData.json";
 import epaHazeData from "./epaHazeData.json";
+import geonetVolcanoData from "./geonetVolcanoData.json";
 
 const icon = (color) =>
   new L.Icon({
@@ -291,6 +292,15 @@ export const cameraSourceCatalog = [
     category: "nature",
     accent: "#1971c2",
     icon: blueIcon,
+  },
+  {
+    id: "geonetVolcano",
+    label: "GeoNet NZ Volcano Webcams",
+    shortLabel: "GeoNet Volcano",
+    group: "Nature",
+    category: "nature",
+    accent: "#e8590c",
+    icon: orangeIcon,
   },
 ];
 
@@ -892,6 +902,23 @@ ottawaCameras
         lng,
         feedType: "current-frame",
         previewUrl: imageUrl,
+      }),
+    );
+  }
+});
+
+(geonetVolcanoData || []).forEach((camera) => {
+  const { objectId, name, lat, lng, imageUrl } = camera;
+
+  if (isValidCoordinate(lat, lng) && imageUrl) {
+    records.push(
+      createCamera("geonetVolcano", {
+        id: `geonet-${objectId}`,
+        name: name || "GeoNet volcano webcam",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: imageUrl.replace(/^http:/i, "https:"),
       }),
     );
   }
