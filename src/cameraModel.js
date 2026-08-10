@@ -28,6 +28,7 @@ import seattleData from "./seattleData.json";
 import utahData from "./utahData.json";
 import geonetVolcanoData from "./geonetVolcanoData.json";
 import arlingtonData from "./arlingtonData.json";
+import horizonsData from "./horizonsData.json";
 
 const icon = (color) =>
   new L.Icon({
@@ -301,6 +302,15 @@ export const cameraSourceCatalog = [
     category: "traffic",
     accent: "#9c36b5",
     icon: violetIcon,
+  },
+  {
+    id: "horizons",
+    label: "Horizons NZ Webcams (Rivers/Beaches)",
+    shortLabel: "Horizons NZ",
+    group: "Nature",
+    category: "nature",
+    accent: "#0b7285",
+    icon: blueIcon,
   },
 ];
 
@@ -920,6 +930,24 @@ ottawaCameras
         feedType: "current-frame",
         previewUrl: imageUrl,
         metadata: metadata(["Notes", description]),
+      }),
+    );
+  }
+});
+
+(horizonsData || []).forEach((camera) => {
+  const { objectId, name, lat, lng, imagePath, subheading } = camera;
+
+  if (isValidCoordinate(lat, lng) && imagePath) {
+    records.push(
+      createCamera("horizons", {
+        id: `horizons-${objectId}`,
+        name: name || "Horizons webcam",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: `https://www.horizons.govt.nz${imagePath}`,
+        metadata: metadata(["Area", subheading]),
       }),
     );
   }
