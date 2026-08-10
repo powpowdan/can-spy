@@ -27,6 +27,7 @@ import hawaiiData from "./hawaiiData.json";
 import seattleData from "./seattleData.json";
 import utahData from "./utahData.json";
 import geonetVolcanoData from "./geonetVolcanoData.json";
+import arlingtonData from "./arlingtonData.json";
 
 const icon = (color) =>
   new L.Icon({
@@ -291,6 +292,15 @@ export const cameraSourceCatalog = [
     category: "nature",
     accent: "#e8590c",
     icon: orangeIcon,
+  },
+  {
+    id: "arlington",
+    label: "Arlington, TX Traffic Cameras",
+    shortLabel: "Arlington, TX",
+    group: "North America",
+    category: "traffic",
+    accent: "#9c36b5",
+    icon: violetIcon,
   },
 ];
 
@@ -892,6 +902,24 @@ ottawaCameras
         lng,
         feedType: "current-frame",
         previewUrl: imageUrl.replace(/^http:/i, "https:"),
+      }),
+    );
+  }
+});
+
+(arlingtonData || []).forEach((camera) => {
+  const { objectId, cameraLocation, lat, lng, imageUrl, description } = camera;
+
+  if (isValidCoordinate(lat, lng) && imageUrl) {
+    records.push(
+      createCamera("arlington", {
+        id: `arlington-${objectId}`,
+        name: cameraLocation || "Arlington traffic camera",
+        lat,
+        lng,
+        feedType: "current-frame",
+        previewUrl: imageUrl,
+        metadata: metadata(["Notes", description]),
       }),
     );
   }
